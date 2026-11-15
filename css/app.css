@@ -17,6 +17,10 @@ body {
   overflow-wrap: anywhere; /* 200% 확대에서도 가로로 밀지 않게 */
 }
 
+/* 줄바꿈: keep-all은 한국어용입니다. 띄어쓰기가 없는 중국어·일본어·태국어는 글자 단위로, 유럽 언어는 긴 낱말을 하이픈으로 나눕니다 */
+:lang(zh), :lang(ja), :lang(th) { word-break: normal; }
+:lang(en), :lang(es), :lang(fr), :lang(de) { hyphens: auto; -webkit-hyphens: auto; }
+
 main {
   max-width: 640px;
   margin: 0 auto;
@@ -94,6 +98,11 @@ legend { padding: 0; }
   min-height: var(--touch-min);
   cursor: pointer;
 }
+.choices2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: var(--gap);
+}
 .choice input {
   flex: none;
   width: calc(var(--unit) * 3);
@@ -113,6 +122,12 @@ legend { padding: 0; }
   margin-bottom: var(--gap);
 }
 .region-title { margin-bottom: var(--unit); }
+/* 시험용 고지: 글자와 테두리만으로 알립니다(색에 기대지 않음) */
+.demo {
+  padding: var(--unit) var(--pad-x);
+  border: 2px solid var(--c-text);
+  font-weight: 700;
+}
 .status {
   margin-top: var(--gap);
   min-height: var(--touch-min);

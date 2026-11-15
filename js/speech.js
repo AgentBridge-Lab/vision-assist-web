@@ -31,11 +31,43 @@ export class Speech {
     this._flushTimer = 0;
     this._waitTimer = 0;
     /** @type {AudioContext|null} */ this.audio = null;
+    this.tag = 'ko-KR'; // 발화 언어(BCP-47). setLanguage로 바꿉니다
+    /** 기기의 음성 목록이 바뀌면 불립니다(목록은 늦게 채워지는 브라우저가 많음). @type {(()=>void)|null} */
+    this.onVoicesChanged = null;
+    if (this.synth && this.synth.addEventListener) this.synth.addEventListener('voiceschanged', () => { if (this.onVoicesChanged) this.onVoicesChanged(); });
     this._utter = null; // 발화 객체가 도중에 회수되어 이벤트가 사라지는 브라우저 문제를 피하려고 붙잡아 둠
   }
 
-  /** 앱이 직접 소리 내어 말하는 상태인가. 아니면 글자 영역(알림 영역)만 갱신됩니다. */
-  get voiceOn() { return !!this.synth && this.outputMode === 'app' && !this.muted; }
+  /**
+   * 앱이 직접 소리 내어 말하는 상태인가. 아니면 글자 영역(알림 영역)만 갱신됩니다.
+   * 고른 언어의 음성이 기기에 없으면 "소리 끄기"와 똑같이 다룹니다. 다른 언어 음성으로 읽히지 않게 하려는 것이며,
+   * 이때 알림 영역이 켜져 화면읽기가 제 언어로 읽습니다.
+   */
+  get voiceOn() { return !!this.synth && this.outputMode === 'app' && !this.muted && !!this.pickVoice(); }
+
+  /** 사용자가 앱 음성을 원하는데(앱 음성 방식, 소리 켬) 고른 언어의 음성이 없는 상태인가 */
+  get voiceMissing() { return !!this.synth && this.outputMode === 'app' && !this.muted && !this.pickVoice(); }
+
+  /** @param {string} tag BCP-47 (ko-KR, zh-CN, en-US, es-ES, fr-FR, de-DE, th-TH, ja-JP) */
+  setLanguage(tag) {
+    if (tag === this.tag) return;
+    this.cancel();
+    this.tag = tag;
+  }
+
+  /**
+   * 고른 언어의 음성. 같은 태그가 있으면 그것, 없으면 같은 언어의 다른 지역 음성. 없으면 null.
+   * 중국어는 광둥어 음성(zh-HK, yue)을 쓰지 않습니다.
+   * @returns {SpeechSynthesisVoice|null}
+   */
+  pickVoice() {
+    if (!this.synth) return null;
+    const norm = (v) => String(v.lang || '').replace('_', '-').toLowerCase();
+    const tag = this.tag.toLowerCase(), primary = tag.split('-')[0];
+    let list = this.synth.getVoices().filter((v) => norm(v).split('-')[0] === primary);
+    if (primary === 'zh') list = list.filter((v) => !/-(hk|mo)\b|yue/.test(norm(v)));
+    return list.find((v) => norm(v) === tag) || list[0] || null;
+  }
 
   /** 사용자 동작 안에서 한 번 불러 효과음 재생을 개통합니다. */
   unlock() {
@@ -118,9 +150,10 @@ export class Speech {
     if (this.current !== item || !this.synth) return;
     if (i >= item.parts.length) { this._finish(item, true, 'done'); return; }
     const u = new SpeechSynthesisUtterance(item.parts[i]);
-    u.lang = 'ko-KR';
-    const voice = this.synth.getVoices().find((v) => v.lang && v.lang.toLowerCase().startsWith('ko'));
-    if (voice) u.voice = voice;
+    const voice = this.pickVoice();
+    if (!voice) { this._finish(item, false, 'silent'); return; } // 다른 언어 음성으로는 읽지 않습니다
+    u.lang = this.tag;
+    u.voice = voice;
     u.rate = this.cfg.RATE_STEPS[this.rateIndex];
     u.volume = this.cfg.VOLUME_STEPS[this.volumeIndex];
     let started = false;
@@ -207,5 +240,5 @@ function clampIndex(i, len) {
 
 /** 문장 단위로 나눕니다. */
 function splitForSpeech(text) {
-  return String(text || '').split(/(?<=[.!?。])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
+  return String(text || '').split(/(?<=[.!?])\s+|(?<=[。！？])\s*|\n+/).map((s) => s.trim()).filter(Boolean);
 }

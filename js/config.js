@@ -6,8 +6,10 @@
  */
 export const CONFIG = Object.freeze({
   // ── 프록시 ──────────────────────────────────────────────────────────────
-  /** 빈 문자열이면 worker/worker.js를 브라우저 안에서 직접 실행합니다(내장 목 모드, 외부 전송 없음).
-   *  배포한 프록시 주소를 넣으면 그 주소로 보냅니다. 예: 'https://example.workers.dev' */
+  /** 배포한 프록시 주소. 예: 'https://example.workers.dev'
+   *  빈 문자열이면 물건 설명·주변 살펴보기는 실행되지 않고 "아직 실제 AI에 연결되지 않았습니다"를 안내합니다.
+   *  (글자·문서 읽기는 기기 안에서 처리하므로 그대로 동작합니다.)
+   *  시험용 목 응답은 주소에 ?demo=1 을 붙였을 때만 켜지며, 진입할 때와 결과마다 시험용임을 알립니다. */
   PROXY_URL: '',
   REQUEST_TIMEOUT_MS: 8000,        // [가정] 4-1절 네트워크 시간 초과
   SERVICE_RETRY_MS: 5000,          // 4-1절 서비스 장애 "5초 뒤 1회만"
@@ -72,8 +74,10 @@ export const CONFIG = Object.freeze({
   // CDN 버전 고정. index.html의 <script> 주소·무결성 해시와 함께 바꿔야 합니다.
   OCR_WORKER_PATH: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
   OCR_CORE_PATH: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
-  OCR_LANG_PATH: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/kor@1.0.0/4.0.0_best_int',
-  OCR_LANG: 'kor',
+  // 언어 자료: 고른 언어 + 영어만 그때 받습니다(8개를 미리 받지 않음). {lang} 자리에 kor, chi_sim, eng, spa, fra, deu, tha, jpn
+  // 크기(압축): kor 1.5MB · chi_sim 1.6MB · eng 2.8MB · spa 2.0MB · fra 0.7MB · deu 1.3MB · tha 0.9MB · jpn 1.9MB
+  OCR_DATA_URL: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/{lang}@1.0.0/4.0.0_best_int/{lang}.traineddata.gz',
+  OCR_PROGRESS_STEP: 10,           // [구현 가정] 내려받기 진행률을 화면에 갱신하는 간격(퍼센트)
   OCR_LONG_SIDE: 1600,             // [구현 가정] OCR에 넘기는 사진의 긴 변
   OCR_LINE_DROP_CONF: 40,          // [구현 가정] 이 신뢰도 미만 줄은 읽지 않고 "일부를 읽지 못했습니다"
   OCR_LINE_UNSURE_CONF: 70,        // [구현 가정] 이 신뢰도 미만 줄은 "확실하지 않습니다만"을 앞에 붙임
@@ -81,13 +85,8 @@ export const CONFIG = Object.freeze({
   CONFIRM_WINDOW_MS: 10000,        // [구현 가정] "한 번 더 누르세요" 유효 시간
 
   // ── 화면 ────────────────────────────────────────────────────────────────
-  // DESIGN_TOKENS.md 5절의 5단계(작게·보통·조금 크게·크게·가장 크게). 'm'은 data-fs 속성 없음(17px)
-  FONT_STEPS: Object.freeze([
-    Object.freeze({ key: 's', name: '작게' }),
-    Object.freeze({ key: 'm', name: '보통' }),
-    Object.freeze({ key: 'l', name: '조금 크게' }),
-    Object.freeze({ key: 'xl', name: '크게' }),
-    Object.freeze({ key: 'xxl', name: '가장 크게' }),
-  ]),
+  // DESIGN_TOKENS.md 5절의 5단계(작게·보통·조금 크게·크게·가장 크게). 'm'은 data-fs 속성 없음(17px).
+  // 단계 이름은 로케일의 fontNames에 같은 순서로 있습니다
+  FONT_STEPS: Object.freeze(['s', 'm', 'l', 'xl', 'xxl']),
   FONT_DEFAULT_INDEX: 1,
 });

@@ -1,0 +1,228 @@
+// @ts-check
+/**
+ * Spanish (Spain-neutral, formal "usted") locale. Machine translation of ko.js; same key set required:
+ * `node test/check-locales.mjs --only es`
+ * Fixed confidence vocabulary: "Dice ..." (text read), "Parece ser ..." (inference), "No puedo saberlo." (unknown).
+ */
+export default {
+  meta: { code: 'es', htmlLang: 'es', speechTag: 'es-ES', ocr: 'spa', name: 'Español' },
+
+  ui: {
+    title: 'Asistente visual',
+    guideTitle: 'Guía de uso',
+    settings: 'Ajustes',
+    guideButton: 'Escuchar la guía de uso',
+    legendLanguage: 'Idioma',
+    legendOutput: 'Salida de voz',
+    optApp: 'Voz de la aplicación',
+    optScreenReader: 'Dejar que lo lea el lector de pantalla',
+    optSilent: 'Solo texto, sin sonido',
+    legendLength: 'Longitud de la descripción',
+    optOne: 'Una frase',
+    optNormal: 'Normal',
+    optDetail: 'Detallada',
+    legendFont: 'Tamaño del texto',
+    fontDown: 'Texto más pequeño',
+    fontUp: 'Texto más grande',
+    legendTheme: 'Aspecto de la pantalla',
+    optBasic: 'Básico (fondo claro)',
+    optSharp: 'Alto contraste (fondo oscuro)',
+    statusTitle: 'Estado',
+    errorWord: 'Error',
+    resultTitle: 'Última descripción',
+    pause: 'Pausar',
+    resume: 'Reanudar',
+    stop: 'Terminar',
+    cameraRetry: 'Reintentar',
+    replay: 'Escuchar de nuevo',
+    detail: 'Más detalle',
+    fix: 'Fijar',
+    unfix: 'Soltar',
+    recheck: 'Volver a comprobar',
+    retrySame: 'Reintentar con la misma foto',
+    askLabel: 'Hacer una pregunta',
+    askSend: 'Enviar pregunta',
+    prev: 'Frase anterior',
+    next: 'Frase siguiente',
+    first: 'Desde el principio',
+    newDoc: 'Fotografiar otro documento',
+    aiSummary: 'Pedir un resumen a la IA',
+    aiRead: 'Pedir a la IA que lo descifre',
+    speechGroup: 'Ajuste de voz',
+    slower: 'Más lenta',
+    faster: 'Más rápida',
+    quieter: 'Más baja',
+    louder: 'Más alta',
+    mute: 'Silenciar',
+    unmute: 'Activar sonido',
+    demoBanner: 'Esta es una pantalla de prueba. Las descripciones son ejemplos escritos de antemano y no tienen relación con lo que ve la cámara.',
+  },
+
+  // Five text sizes
+  fontNames: ['Pequeño', 'Normal', 'Algo grande', 'Grande', 'Muy grande'],
+
+  modes: {
+    object: { name: 'Describir un objeto', title: '1. Describir un objeto', desc: 'Le dice qué objeto tiene en la mano o delante de usted' },
+    scene: { name: 'Mirar alrededor', title: '2. Mirar alrededor', desc: 'Sirve para mirar alrededor estando parado. No da indicaciones de ruta' },
+    doc: { name: 'Leer texto y documentos', title: '3. Leer texto y documentos', desc: 'Lee el documento tal como está escrito. La foto no sale del teléfono' },
+  },
+
+  // Four first-use sentences
+  guide: [
+    'Es una herramienta para usar estando parado. No la use mientras camina ni para decidir por dónde caminar.',
+    'Describir un objeto y Mirar alrededor envían la foto a una IA externa. Leer texto y documentos no la envía.',
+    'Puede equivocarse. Vuelva a comprobar los medicamentos, el dinero y las fechas.',
+    'Hay un límite de usos al día.',
+  ],
+
+  status: {
+    startObject: 'Se inicia Describir un objeto. Ponga el objeto delante de la cámara.',
+    startScene: 'Se inicia Mirar alrededor. Sirve para mirar estando parado. No lo use mientras camina ni para decidir por dónde caminar.',
+    startDoc: 'Se inicia Leer texto y documentos. Ponga el documento delante de la cámara.',
+    notConnected: 'Todavía no hay conexión con la IA real. Describir un objeto y Mirar alrededor no están disponibles ahora. Leer texto y documentos sí lo está.',
+    demoStart: 'Modo de prueba. Las descripciones que oirá a partir de ahora son ejemplos escritos de antemano y no tienen relación con lo que ve la cámara.',
+    noVoice: 'Este dispositivo no tiene voz en español, así que le mostraré la información como texto en pantalla.',
+    frameWait: 'Mantenga la cámara quieta un momento.',
+    analyzing: 'Comprobando.',
+    slow: 'La respuesta tarda. Espero un poco más.',
+    noChange: 'No hay cambios. Sigo esperando.',
+    fixed: 'He fijado lo que se ve ahora. Puede dejar el teléfono.',
+    unfixed: 'He soltado la imagen fijada.',
+    paused: 'En pausa.',
+    resumed: 'Reanudado.',
+    idlePaused: 'Sin actividad durante 3 minutos, así que se ha pausado. Puede continuar con el botón Reanudar.',
+    returned: 'Está en pausa. Pulse el botón Reanudar.',
+    docFixed: 'He fijado el documento. Le leo el texto original.',
+    stopped: 'Terminado. La cámara está apagada.',
+    sceneMoving: 'No describo mientras hay movimiento. Cuando se detenga, volveré a mirar.',
+    cameraReconnected: 'La cámara se ha vuelto a conectar.',
+    wakeLockDenied: 'Si la pantalla se apaga, se detiene.',
+    remaining: (n) => `Hoy le quedan ${n} usos.`,
+    sessionLimit: (n) => `Se han hecho ${n} descripciones en esta sesión y se ha pausado. Puede continuar con el botón Reanudar.`,
+    busy: 'Estoy comprobando la petición anterior. Inténtelo de nuevo en un momento.',
+    noLast: 'Todavía no hay ninguna descripción que repetir.',
+    needQuestion: 'Escriba primero la pregunta.',
+    rateChanged: 'Esta es la velocidad.',
+    rateLimit: 'No se puede cambiar más la velocidad.',
+    volumeChanged: 'Este es el volumen.',
+    volumeMax: 'Use los botones de volumen del lateral del teléfono.',
+    volumeMin: 'Es el volumen más bajo.',
+    muted: 'Sonido desactivado. Le mostraré la información como texto en pantalla.',
+    unmuted: 'Sonido activado.',
+    ocrPreparing: 'Preparando la lectura de texto. La primera vez tarda un poco.',
+    ocrDownloading: (pct) => `Descargando datos para leer texto. ${pct} por ciento.`,
+    ocrReady: 'La lectura de texto está lista.',
+    ocrReading: 'Leyendo el texto. Mantenga el documento quieto un momento.',
+    ocrNoText: 'No he podido leer el texto. Aleje un poco el documento o vuelva a enfocarlo con más luz.',
+    ocrUnavailable: 'No se ha podido cargar la lectura de texto en este dispositivo. Compruebe la conexión a internet y vuelva a empezar.',
+    docEnd: 'He terminado de leer.',
+    docFirst: 'Es la primera frase.',
+    docLast: 'Es la última frase.',
+    docNew: 'Enfoque un documento nuevo.',
+    docNeedText: 'Primero hay que leer el documento para poder pedir un resumen.',
+    confirmSendText: 'El texto se enviará a una IA externa. Para continuar, vuelva a pulsar el botón.',
+    confirmSendPhoto: 'La foto se enviará a una IA externa. Para continuar, vuelva a pulsar el botón.',
+    fontSize: (name) => `Tamaño del texto: ${name}`,
+    fontMin: 'Es el tamaño de texto más pequeño.',
+    fontMax: 'Es el tamaño de texto más grande.',
+    languageChanged: 'Idioma cambiado a español.',
+  },
+
+  errors: {
+    camera_unsupported: 'Este navegador no permite usar la cámara.',
+    camera_denied: 'No se ha permitido el uso de la cámara. Permítala en la configuración del sitio, en la barra de direcciones del navegador, y pulse Reintentar.',
+    camera_notfound: 'No se ha encontrado ninguna cámara.',
+    camera_busy: 'Otra aplicación está usando la cámara. Ciérrela y pulse Reintentar.',
+    camera_stalled: 'La cámara se ha detenido. Termine y vuelva a empezar.',
+    network: 'Se ha perdido la conexión a internet. Continuará solo cuando se restablezca. Leer texto y documentos sigue disponible.',
+    service: 'El servicio tiene un problema. No es un problema de su teléfono ni de su conexión. Inténtelo de nuevo dentro de un rato.',
+    limit_device: 'Ha agotado los usos de hoy. Podrá volver a usarlo a las 0:00 de mañana. Leer texto y documentos sigue disponible.',
+    limit_budget: 'Se ha agotado el presupuesto gratuito de este mes, así que Describir un objeto y Mirar alrededor están en pausa. Leer texto y documentos sigue disponible.',
+  },
+
+  quality: {
+    dark: 'Hay demasiada oscuridad. Pase a un lugar con más luz.',
+    blur: 'La foto ha salido movida. Quédese quieto un momento.',
+    blurRepeated: 'Las fotos siguen saliendo borrosas. Ponga el objeto sobre una mesa y sostenga el teléfono a unos 30 centímetros por encima.',
+    cut: 'El texto queda cortado. Aleje un poco el teléfono.',
+    glare: 'Hay reflejos. Cambie un poco el ángulo.',
+    far: 'Está lejos y no se puede leer el texto. Acérquese y vuelva a enfocar.',
+  },
+
+  // Out-of-scope replies
+  outOfScope: {
+    navigation: 'No ofrezco indicaciones de ruta. Solo le digo lo que se ve estando parado.',
+    identity: 'No digo quién es una persona. Solo le puedo decir que se ve a una persona.',
+    usage: 'No explico cómo se usa un aparato. Solo leo el texto escrito en los botones.',
+    medicine_advice: 'No indico la eficacia de un medicamento ni cómo se toma. Solo leo el texto escrito. Consúltelo con un farmacéutico.',
+    absent: 'Ahora no se ve en la pantalla. Mueva la cámara despacio hacia un lado.',
+    uncertain: 'Se ve algo parecido, pero no puedo asegurarlo. Acerque la cámara y vuelva a comprobar.',
+    moving: 'No puedo leer lo que está en movimiento.',
+    absence: 'No está en la zona visible. Lo que la cámara no capta, no puedo saberlo.',
+    display_off: 'La pantalla está apagada o no se ve el texto.',
+    small_object: 'Puede que no encuentre objetos pequeños. Que no lo encuentre no significa que no esté.',
+  },
+
+  rule: {
+    unsurePrefix: 'No estoy seguro: ', // goes in front of a full sentence
+    unknown: 'No puedo saberlo.',
+    readFail: 'No he podido leer el texto.',
+    cut: 'El texto está cortado y solo he leído una parte.',
+    occluded: 'Una parte está tapada y no se ve.',
+    importantClosing: 'Vuelva a comprobar el contenido importante por otro medio.',
+    medicineClosing: 'Antes de tomarlo, vuelva a comprobarlo con un farmacéutico u otra persona.',
+    medicalValueClosing: 'Las pantallas de números se leen fácilmente mal. Compruebe por otro medio los valores importantes.',
+    medicalValueUnverified: 'No he podido confirmar los números leyéndolos dos veces. No los voy a decir.',
+    navReplaced: 'No ofrezco indicaciones de ruta. Solo le digo lo que se ve.',
+    recheckSame: (n) => `Al mirar de nuevo sigue pareciendo lo mismo. Lo he comprobado ${n} veces.`,
+    docPartial: 'Hay parte del texto que no he podido leer.',
+    docNumberOnce: 'He leído el número una sola vez y no he podido confirmarlo.',
+    demoNotice: 'Es un ejemplo de prueba. No tiene relación con el objeto real.',
+  },
+
+  labels: {
+    subject: 'Sujeto', readText: 'Texto escrito', inferred: 'Deducido', notice: 'Aviso', answer: 'Respuesta',
+    unread: 'Parte no vista', capture: 'Cómo fotografiar', confirm: 'Comprobar', recheck: 'Volver a comprobar', demo: 'Prueba',
+  },
+
+  // Lowercase substrings matched against free model text
+  forbidden: {
+    navigation: ['siga recto', 'siga derecho', 'siga adelante', 'siga por', 'todo recto', 'de frente', 'vaya ', 'camine', 'caminar hacia',
+      'puede pasar', 'puede cruzar', 'puede caminar', 'puede avanzar', 'puede ir', 'pase por', 'cruce ', 'cruzar', 'gire ', 'doble a',
+      'avance', 'avanzar', 'evite', 'esquive', 'tenga cuidado', 'con cuidado', 'es seguro', 'son seguros', 'sin peligro', 'peligro',
+      'obstáculo', 'obstaculo', 'camino libre', 'paso libre', 'vía libre', 'despejado', 'está libre', 'deténgase', 'párese', 'retroceda'],
+    usage: ['pulse ', 'presione', 'pulsando', 'seleccione', 'toque ', 'toca el', 'gire la perilla', 'gire el', 'mantenga pulsado',
+      'mantenga presionado', 'utilice', 'use el', 'use la', 'ajuste el', 'active el', 'se enciende al', 'se enciende si', 'se activa al',
+      'funciona al', 'funciona si'],
+    medicine: ['eficacia', 'eficaz', 'efecto', 'reacciones adversas', 'tome ', 'tómese', 'tomar ', 'se toma', 'dosis', 'posología',
+      'sirve para', 'alivia', 'calma el', 'cura ', 'curar', 'trata ', 'tratamiento', 'tratar', 'indicado para', 'es bueno para', 'contraindic'],
+  },
+
+  // Out-of-scope question detection. Evaluated in order: medicine_advice, identity, usage, navigation
+  question: {
+    medicine_advice: /(eficacia|efectos? (secundarios?|adversos?)|para qu[eé] sirve (esta|este|el|la) (medicina|medicamento|pastilla|p[ií]ldora|pomada|jarabe)|dosis|posolog[ií]a|c[oó]mo (se )?(toma|tomo|debo tomar|tengo que tomar)|cu[aá]ntas? (pastillas|comprimidos|veces|c[aá]psulas)|cu[aá]ndo (se )?(toma|tomo|debo tomar)|qu[eé] (medicina|medicamento|pastilla) es|contraindicaci|puedo tomar|se puede tomar|c[oó]mo se aplica)/i,
+    identity: /(qui[eé]n (es|era|ser[aá]|est[aá])|c[oó]mo se llama|nombre de (esa|esta|la|ese|este) (persona|hombre|mujer|chico|chica|ni[ñn]o|ni[ñn]a)|conozco a|es mi (coche|taxi)|mi taxi|mi coche|reconoc|su cara|la cara de)/i,
+    usage: /(c[oó]mo (se )?(usa|utiliza|maneja|enciende|apaga|funciona|pone en marcha|configura|programa|opera)|c[oó]mo (lo |la )?(uso|utilizo|enciendo|apago|configuro|programo)|modo de empleo|modo de uso|instrucciones de uso|qu[eé] (bot[oó]n|tecla|interruptor)|cu[aá]l (es el |es la )?(bot[oó]n|tecla)|d[oó]nde (hay que |tengo que )?(pulsar|presionar|tocar|pulso)|qu[eé] (tengo que|debo|hay que) (pulsar|presionar|tocar))/i,
+    navigation: /(c[oó]mo (llego|voy|se va|puedo ir|puedo llegar|salgo|ir)|por d[oó]nde (voy|se va|puedo|salgo|sigo|paso)|hacia d[oó]nde (voy|ir|debo|tengo)|(puedo|podemos) (pasar|cruzar|caminar|avanzar|ir)|se puede (pasar|cruzar|caminar|ir)|es seguro|est[aá] libre el (paso|camino)|obst[aá]culos?|me (choco|voy a chocar|golpeo)|\bcamino\b|\bruta\b)/i,
+  },
+
+  // Words that mark medicine / important documents
+  docWords: {
+    medicine: /(farmacia|dispensaci[oó]n|receta|prescrip|posolog|dosis|tomar|\d ?(veces|comprimidos?|c[aá]psulas?)|cada \d+ ?h|despu[eé]s de (las )?comidas|antes de (las )?comidas|en ayunas|antes de acostarse|comprimido|c[aá]psula|jarabe|pomada|colirio|\bmg\b|miligramo|v[ií]a oral|medicamento)/i,
+    important: /(importe|total|vencimiento|fecha l[ií]mite|plazo|factura|recibo|a pagar|\bpago\b|cobro|contrato|n[uú]mero de cuenta|\biban\b|ingres|seguro|impuesto|multa|sanci[oó]n|\d ?€|\d ?euros?|hipoteca|deuda)/i,
+  },
+
+  // Sentence templates. Confidence words: "Dice ..." / "Parece ser ..." / "No puedo saberlo."
+  fmt: {
+    seems: (subject) => `Parece ser ${subject}.`,
+    quote: (text) => `Dice: "${text}".`,
+    recheckChanged: (before, now) => `Al principio parecía ser ${before}, ahora parece ser ${now}. No estoy seguro.`,
+    /** Adds "respecto a la cámara" to sentences that mention left/right (idempotent) */
+    cameraBasis: (s) => (!/(izquierda|derecha)/i.test(s) || /respecto a la c[aá]mara/i.test(s) ? s : s.replace(/[.\s]+$/, '') + ', respecto a la cámara.'),
+    valueEither: (a, b) => `Se lee el número ${a} o ${b}.`,
+    valueNone: 'no se lee',
+    docEither: (a, b) => `Se lee ${a} o ${b}`,
+    docMismatch: (a) => `${a} no coincidió al volver a leerlo`,
+    docTail: (list) => ` Los números de esta línea son ${list}.`,
+  },
+};

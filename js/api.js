@@ -28,6 +28,7 @@
  * @property {boolean} [recheck]
  * @property {string} [question]
  * @property {string} [prevSummary]
+ * @property {string} lang           사용자가 고른 언어 코드(ko, zh-CN, en, es, fr, de, th, ja). 모델이 이 언어로 답합니다
  */
 
 import { CONFIG } from './config.js';
@@ -65,16 +66,25 @@ export function isValidResult(r) {
     && ENUMS.high_risk.includes(r.high_risk) && ENUMS.out_of_scope.includes(r.out_of_scope);
 }
 
-/** 내장 목 모드: worker.js를 브라우저 안에서 직접 실행합니다. 사진은 어디로도 전송되지 않습니다. */
+/**
+ * 시험용 모드: 주소에 ?demo=1 이 있을 때만 켜집니다.
+ * 목 응답은 카메라에 비친 것과 관계없는 예시라서, 이 표시 없이는 절대 내보내지 않습니다.
+ */
+export const DEMO = typeof location !== 'undefined' && new URLSearchParams(location.search).get('demo') === '1';
+
+/** 물건 설명·주변 살펴보기·AI 요약을 쓸 수 있는가: 프록시 주소가 설정됐거나 시험용 모드일 때만 */
+export function cloudAvailable() { return !!CONFIG.PROXY_URL || DEMO; }
+
+/** 시험용 모드의 내장 목: worker.js를 브라우저 안에서 직접 실행합니다. 사진은 어디로도 전송되지 않습니다. */
 let localWorker = null;
 async function localFetch(init) {
   if (!localWorker) localWorker = (await import('../worker/worker.js')).default;
   return localWorker.fetch(new Request('https://local.invalid/v1/describe', init), {});
 }
 
-/** 시험용: 내장 목 모드에서만 주소의 ?mock=시나리오&mockDelay=밀리초 를 프록시 머리말로 넘깁니다. */
+/** 시험용 모드의 내장 목에서만 주소의 ?mock=시나리오&mockDelay=밀리초 를 프록시 머리말로 넘깁니다. */
 function mockHeaders() {
-  if (CONFIG.PROXY_URL) return {};
+  if (CONFIG.PROXY_URL || !DEMO) return {};
   const q = new URLSearchParams(location.search);
   /** @type {Record<string,string>} */ const h = {};
   if (q.get('mock')) h['x-mock-scenario'] = String(q.get('mock'));
@@ -85,10 +95,13 @@ function mockHeaders() {
 /**
  * @param {DescribeRequest} payload
  * @param {AbortSignal} [signal] 일시정지·종료 때 호출을 버리기 위한 신호
- * @returns {Promise<{result:DescribeResult, limits:{device_remaining:number, session_remaining:number}}>}
+ * @returns {Promise<{result:DescribeResult, mock:boolean, limits:{device_remaining:number, session_remaining:number}}>}
+ *   mock이 true면 사진을 보지 않은 예시 응답입니다. 부르는 쪽이 결과마다 시험용 고지를 붙여야 합니다
  * @throws {ApiError}
  */
 export async function describe(payload, signal) {
+  // 프록시도 없고 시험용 모드도 아니면 호출 자체를 하지 않습니다(목 응답이 실제 설명처럼 나가는 것을 막는 마지막 방어선)
+  if (!cloudAvailable()) throw new ApiError('service');
   const ctrl = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, CONFIG.REQUEST_TIMEOUT_MS);
@@ -121,5 +134,6 @@ export async function describe(payload, signal) {
   if (!res.ok) throw new ApiError('service');
   // 발생 지점 4: 정상 응답인데 구조화 검증 실패 → 형식 이상
   if (!data || data.ok !== true || !isValidResult(data.result)) throw new ApiError('format');
-  return { result: data.result, limits: data.limits || { device_remaining: Infinity, session_remaining: Infinity } };
+  // 프록시가 목으로 답했으면(mock: true) 그대로 알리고, 내장 목은 항상 목입니다
+  return { result: data.result, mock: data.mock === true || !CONFIG.PROXY_URL, limits: data.limits || { device_remaining: Infinity, session_remaining: Infinity } };
 }

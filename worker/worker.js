@@ -16,7 +16,23 @@
  *   SESSION_LIMIT, DEVICE_DAILY_LIMIT, DEVICE_DAILY_LIMIT_REDUCED, IP_DAILY_LIMIT,
  *   PRICE_INPUT_PER_M, PRICE_OUTPUT_PER_M
  * 바인딩(선택): LIMITS = Durable Object 네임스페이스(클래스 LimitCounter). 없으면 메모리에 셉니다(목·개발용).
+ *
+ * 목 응답 주의: 목은 사진을 보지 않고 미리 적어 둔 예시를 돌려줍니다. 그래서
+ *   - 응답에 mock: true를 실어 보내고(프런트가 결과마다 시험용 고지를 붙임),
+ *   - 확신 정도를 절대 certain으로 두지 않습니다.
  */
+import mockKo from './mock/ko.js';
+import mockZh from './mock/zh-CN.js';
+import mockEn from './mock/en.js';
+import mockEs from './mock/es.js';
+import mockFr from './mock/fr.js';
+import mockDe from './mock/de.js';
+import mockTh from './mock/th.js';
+import mockJa from './mock/ja.js';
+
+/** 지원 언어(프런트의 js/i18n.js와 같은 목록). 값은 목 글귀이며 langName은 지시문에도 씁니다. */
+const LANGS = Object.freeze({ ko: mockKo, 'zh-CN': mockZh, en: mockEn, es: mockEs, fr: mockFr, de: mockDe, th: mockTh, ja: mockJa });
+const DEFAULT_LANG = 'ko';
 
 // ── 설정 (2-4절의 [가정] 초기값) ────────────────────────────────────────────
 const DEFAULTS = Object.freeze({
@@ -176,11 +192,11 @@ export function isValidResult(r) {
 
 // ── 지시문 (1-3절, 4-4절, 4-5절, 4-6절) ─────────────────────────────────────
 const COMMON_RULES = [
-  '당신은 앞이 보이지 않거나 잘 보이지 않는 사용자를 위해 사진 한 장을 설명합니다. 한국어로만 답합니다.',
+  '당신은 앞이 보이지 않거나 잘 보이지 않는 사용자를 위해 사진 한 장을 설명합니다.',
   '정해진 JSON 항목만 채웁니다.',
   'subject에는 대상의 종류나 이름을 짧은 명사구로만 씁니다(예: "우유 팩"). 문장으로 쓰지 않습니다.',
   'read_text에는 사진에서 실제로 읽힌 글자만 원문 그대로 넣습니다. 안 읽힌 부분을 보완하거나 뜻을 풀지 않습니다. 숫자·날짜·금액·용량은 표기 그대로 둡니다.',
-  'details의 모든 문장은 "…로 보입니다."로 끝냅니다. 읽은 글자와 추정을 섞지 않습니다.',
+  'details의 모든 문장은 추정임이 드러나는 문형으로 씁니다(한국어라면 "…로 보입니다."로 끝냄). 읽은 글자와 추정을 섞지 않습니다.',
   '확신 정도는 certain, inferred, unknown 가운데 하나만 씁니다. 모르면 unknown으로 두고 지어내지 않습니다.',
   '글자가 잘렸거나 가려졌으면 unread에 표시합니다. 사진이 흐리거나 어둡거나 반사되면 quality에 표시합니다.',
   '금지: 이동 방향, 보행 가능 여부, 안전 판단, 장애물 회피를 말하지 않습니다.',
@@ -188,7 +204,8 @@ const COMMON_RULES = [
   '금지: 약의 효능·부작용·복용법을 덧붙이지 않습니다. 약은 적힌 글자만 read_text에 넣고 high_risk를 medicine으로 둡니다.',
   '금지: 사람이 누구인지, 얼굴의 신원을 말하지 않습니다. 사람이 보인다는 것까지만 말합니다.',
   '금지: 사과·동정 표현, "보시면", "저기", "여기" 같은 시각을 전제한 지시어를 쓰지 않습니다.',
-  '좌우를 말할 때는 반드시 "카메라 기준 왼쪽", "카메라 기준 오른쪽"이라고 씁니다.',
+  '좌우를 말할 때는 반드시 카메라 기준임을 밝힙니다(한국어라면 "카메라 기준 왼쪽", "카메라 기준 오른쪽").',
+  '확인을 권하는 말, 불확실하다는 말, 사과를 문장으로 덧붙이지 않습니다. 그런 표시는 confidence, target, quality, high_risk, out_of_scope 항목으로만 합니다.',
   '"없다", "깨끗하다", "안전하다"고 단정하지 않습니다. 보이는 범위에서만 말합니다.',
   '혈당계·체온계·혈압계 같은 숫자 표시창이면 high_risk를 medical_value로, 가전 조작판이면 panel로, 금액·날짜·계좌가 있는 문서면 important_doc으로 둡니다.',
   '길·이동, 신원, 사용법, 약의 효능·복용을 묻는 질문에는 내용으로 답하지 않고 out_of_scope에 종류만 표시합니다.',
@@ -205,6 +222,8 @@ const MODE_RULES = Object.freeze({
 function buildInput(body) {
   const user = [];
   const parts = [MODE_RULES[body.mode]];
+  // 출력 언어: 요청에 실려 온 사용자의 선택 언어
+  parts.push(`출력 언어: subject, details, answer는 반드시 ${LANGS[body.lang].langName}(${body.lang})로만 씁니다. read_text는 번역하지 않고 사진에 적힌 글자 그대로 둡니다.`);
   parts.push(body.detail ? '요청: 자세히. details를 네 문장 이내로 채웁니다.' : '요청: 기본. details는 한 문장 이내로 씁니다.');
   if (body.prevSummary) parts.push(`직전 설명 요약: ${body.prevSummary}\n같은 대상이고 새로 말할 것이 없으면 is_new를 false로 둡니다.`);
   if (body.question) parts.push(`사용자 질문: ${body.question}`);
@@ -249,41 +268,47 @@ async function callOpenAI(env, cfg, body) {
 }
 
 // ── 목 응답 ─────────────────────────────────────────────────────────────────
+// 사진을 보지 않으므로 확신 정도의 기본값은 inferred입니다. certain은 쓰지 않습니다.
 const base = (o) => ({
   is_new: true, subject: '', read_text: [], details: [], answer: '', unread: 'none',
-  quality: { issue: 'none', action: 'none' }, confidence: 'certain', target: 'na', high_risk: 'none', out_of_scope: 'none', ...o,
+  quality: { issue: 'none', action: 'none' }, confidence: 'inferred', target: 'na', high_risk: 'none', out_of_scope: 'none', ...o,
 });
 
-const MOCK_OBJECTS = [
-  base({ subject: '우유 팩', read_text: ['서울우유', '1L', '2026.11.20'], details: ['흰색과 초록색 종이 팩으로 보입니다.'] }),
-  base({ subject: '컵라면', read_text: ['신라면', '큰사발면', '114g'], details: ['빨간색 뚜껑이 덮인 종이 용기로 보입니다.'] }),
-  base({ subject: '생수병', read_text: ['제주 삼다수', '500mL'], details: ['투명한 플라스틱 병으로 보입니다.'], confidence: 'inferred' }),
-  base({ subject: '리모컨', read_text: ['전원', '음량', '채널'], details: ['검은색 긴 막대 모양으로 보입니다. 카메라 기준 위쪽에 전원 글자가 있는 것으로 보입니다.'] }),
-];
-const MOCK_SCENES = [
-  base({ subject: '편의점 음료 매대', read_text: ['2+1'], details: ['왼쪽 칸에 생수가 놓인 것으로 보입니다.', '오른쪽 칸에 캔 음료가 놓인 것으로 보입니다.'] }),
-  base({ subject: '식탁', details: ['카메라 기준 왼쪽에 밥그릇이, 가운데에 국그릇이 놓인 것으로 보입니다.'], confidence: 'inferred' }),
-  base({ subject: '사무실 책상', read_text: [], details: ['사람이 한 명 있는 것으로 보입니다.', '오른쪽에 모니터가 있는 것으로 보입니다.'] }),
-];
-
-/** 시험용 시나리오. 목 모드에서만, 요청 머리말 x-mock-scenario로 고릅니다. */
-const MOCK_SCENARIOS = Object.freeze({
-  medicine: base({ subject: '약 봉투', read_text: ['홍길동 귀하', '1일 3회 식후 30분', '아세트아미노펜 500mg'], details: ['해열제로 보입니다. 두통에 효과가 있습니다.'], high_risk: 'medicine' }),
-  medicine_unread: base({ subject: '약 봉투', read_text: [], confidence: 'inferred', high_risk: 'medicine' }),
-  panel: base({ subject: '세탁기 조작판', read_text: ['전원', '표준', '헹굼', '탈수'], details: ['전원 버튼을 누르면 켜집니다. 표준 코스를 선택하세요.', '카메라 기준 오른쪽 끝에 전원 글자가 있는 것으로 보입니다.'], high_risk: 'panel' }),
-  value: base({ subject: '체온계', read_text: ['36.5'], high_risk: 'medical_value' }),
-  guidance: base({ subject: '복도', details: ['앞이 비어 있으니 직진하세요.', '오른쪽에 문이 있는 것으로 보입니다.', '장애물이 없어 안전합니다.'] }),
-  glare: base({ subject: '과자 봉지', read_text: ['새우'], unread: 'cut', quality: { issue: 'glare', action: 'angle' }, confidence: 'inferred' }),
-  far: base({ subject: '안내판', quality: { issue: 'far', action: 'closer' }, confidence: 'inferred' }),
-  unknown: base({ subject: '', confidence: 'unknown' }),
-  notnew: base({ is_new: false, subject: '우유 팩' }),
-  absent: base({ subject: '음료 매대', target: 'absent' }),
-  uncertain: base({ subject: '음료 매대', target: 'uncertain' }),
-  moving: base({ out_of_scope: 'moving' }),
-  absence: base({ out_of_scope: 'absence' }),
-  important: base({ subject: '고지서', read_text: ['납부 금액 15,000원', '납기 2026.11.30'], high_risk: 'important_doc' }),
-  malformed: { subject: 12, hello: 'world' },
-});
+/** 언어별 목 응답 묶음. 글귀는 worker/mock/<언어>.js */
+function mockSet(lang) {
+  const M = LANGS[lang], s = M.subjects, d = M.details;
+  return {
+    objects: [
+      base({ subject: s.milk, read_text: ['MILK', '1L', '2026.11.20'], details: [d.milk] }),
+      base({ subject: s.noodles, read_text: ['RAMEN', '114g'], details: [d.noodles] }),
+      base({ subject: s.water, read_text: ['WATER', '500mL'], details: [d.water] }),
+      base({ subject: s.remote, read_text: M.read.remote, details: [d.remote] }),
+    ],
+    scenes: [
+      base({ subject: s.shelf, read_text: ['2+1'], details: [d.shelfLeft, d.shelfRight] }),
+      base({ subject: s.table, details: [d.table] }),
+      base({ subject: s.desk, details: [d.deskPerson, d.deskMonitor] }),
+    ],
+    // 시험용 시나리오. 목 모드에서만, 요청 머리말 x-mock-scenario로 고릅니다
+    scenarios: {
+      medicine: base({ subject: s.medicine, read_text: M.read.medicine, details: [d.medicineBad], high_risk: 'medicine' }),
+      medicine_unread: base({ subject: s.medicine, high_risk: 'medicine' }),
+      panel: base({ subject: s.panel, read_text: M.read.panel, details: [d.panelBad, d.panelPosition], high_risk: 'panel' }),
+      value: base({ subject: s.thermometer, read_text: ['36.5'], high_risk: 'medical_value' }),
+      guidance: base({ subject: s.corridor, details: [d.corridorBad1, d.corridorDoor, d.corridorBad2] }),
+      glare: base({ subject: s.snack, read_text: ['SNACK'], unread: 'cut', quality: { issue: 'glare', action: 'angle' } }),
+      far: base({ subject: s.sign, quality: { issue: 'far', action: 'closer' } }),
+      unknown: base({ subject: '', confidence: 'unknown' }),
+      notnew: base({ is_new: false, subject: s.milk }),
+      absent: base({ subject: s.shelf, target: 'absent' }),
+      uncertain: base({ subject: s.shelf, target: 'uncertain' }),
+      moving: base({ out_of_scope: 'moving' }),
+      absence: base({ out_of_scope: 'absence' }),
+      important: base({ subject: s.bill, read_text: M.read.bill, high_risk: 'important_doc' }),
+      malformed: { subject: 12, hello: 'world' },
+    },
+  };
+}
 
 function pick(list, seed) {
   let h = 0;
@@ -300,18 +325,19 @@ async function mockRespond(request, cfg, body) {
   if (delay) await sleep(delay);
   const microUsd = (body.detail ? cfg.MOCK_COST_DETAIL_USD : cfg.MOCK_COST_BASIC_USD) * 1e6;
   if (scenario === 'error500') return { result: null, microUsd: 0, status: 500 };
+  const M = LANGS[body.lang], set = mockSet(body.lang);
   let r;
-  if (scenario && MOCK_SCENARIOS[scenario]) r = MOCK_SCENARIOS[scenario];
-  else if (body.mode === 'doc_summary') r = base({ subject: '문서', details: ['글자 수가 ' + body.text.length + '자인 문서로 보입니다.'], confidence: 'inferred' });
-  else if (body.mode === 'doc_read') r = base({ subject: '문서', read_text: ['(목 응답) 판독 글자 예시'], confidence: 'inferred' });
-  else r = pick(body.mode === 'scene' ? MOCK_SCENES : MOCK_OBJECTS, body.image || '');
+  if (scenario && set.scenarios[scenario]) r = set.scenarios[scenario];
+  else if (body.mode === 'doc_summary') r = base({ subject: M.subjects.document, details: [M.docSummary(body.text.length)] });
+  else if (body.mode === 'doc_read') r = base({ subject: M.subjects.document, read_text: M.read.docRead });
+  else r = pick(body.mode === 'scene' ? set.scenes : set.objects, body.image || '');
   r = JSON.parse(JSON.stringify(r));
   if (scenario !== 'malformed') {
     if (body.question && !scenario) {
       // 목 응답의 질문 처리: 글자 맞추기로 흉내만 냅니다
-      if (/없(어|나|는지|습니까)/.test(body.question)) r.out_of_scope = 'absence';
-      else if (/(버스|움직)/.test(body.question)) r.out_of_scope = 'moving';
-      else { r.target = 'present'; r.answer = '질문하신 것이 가운데에 있는 것으로 보입니다.'; }
+      if (M.questionPatterns.absence.test(body.question)) r.out_of_scope = 'absence';
+      else if (M.questionPatterns.moving.test(body.question)) r.out_of_scope = 'moving';
+      else { r.target = 'present'; r.answer = M.answer; }
     }
     if (!scenario && body.prevSummary && r.subject && body.prevSummary.startsWith(r.subject) && !body.detail && !body.question && !body.recheck) r.is_new = false;
   }
@@ -326,6 +352,8 @@ const ID_RE = /^[A-Za-z0-9_-]{8,64}$/;
 function validateBody(b, cfg) {
   if (!b || typeof b !== 'object') return 'BAD_REQUEST';
   if (!MODES.includes(b.mode)) return 'BAD_REQUEST';
+  if (b.lang === undefined) b.lang = DEFAULT_LANG; // 언어를 싣지 않은 옛 요청은 한국어
+  if (typeof b.lang !== 'string' || !Object.prototype.hasOwnProperty.call(LANGS, b.lang)) return 'BAD_REQUEST';
   if (!ID_RE.test(b.deviceId || '') || !ID_RE.test(b.sessionId || '')) return 'BAD_REQUEST';
   for (const k of ['question', 'prevSummary', 'text']) {
     if (b[k] !== undefined && typeof b[k] !== 'string') return 'BAD_REQUEST';
@@ -395,11 +423,12 @@ export default {
     }
     if (out.status && out.status >= 500) return fail('UPSTREAM_ERROR');
     if (out.microUsd) await lim.addCost(out.microUsd);
+    const mock = !useOpenAI(env); // 프런트가 결과마다 시험용 고지를 붙이도록 표시
     if (!useOpenAI(env) && request.headers.get('x-mock-scenario') === 'malformed') {
       // 시험용: 프런트의 "응답 형식 이상" 분기를 유발하려고 검증을 건너뛰고 그대로 보냄
-      return json({ ok: true, result: out.result, limits: { device_remaining: adm.device_remaining, session_remaining: adm.session_remaining } });
+      return json({ ok: true, mock, result: out.result, limits: { device_remaining: adm.device_remaining, session_remaining: adm.session_remaining } });
     }
     if (!isValidResult(out.result)) return fail('UPSTREAM_FORMAT');
-    return json({ ok: true, result: out.result, limits: { device_remaining: adm.device_remaining, session_remaining: adm.session_remaining } });
+    return json({ ok: true, mock, result: out.result, limits: { device_remaining: adm.device_remaining, session_remaining: adm.session_remaining } });
   },
 };

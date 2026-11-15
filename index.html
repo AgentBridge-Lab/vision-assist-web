@@ -13,64 +13,75 @@
   <script type="module" src="js/main.js"></script>
 </head>
 <body>
+<!--
+  글귀는 js/locales/<언어>.js에서 옵니다. data-i18n="경로"가 붙은 요소는 main.js가 고른 언어의 글귀로 채웁니다.
+  아래에 적힌 한국어는 스크립트가 뜨기 전에 잠깐 보이는 기본값입니다.
+-->
 
 <!-- ───────────── 모드 선택 화면 (기획서 3-2절: 초점 순서 고정) ───────────── -->
 <main id="screen-select">
-  <h1 id="app-title">시각 보조</h1>
+  <h1 id="app-title" data-i18n="ui.title">시각 보조</h1>
+
+  <p id="demo-banner-select" class="demo" data-i18n="ui.demoBanner" hidden></p>
 
   <section id="guide" aria-labelledby="guide-title" hidden>
-    <h2 id="guide-title">사용 안내</h2>
+    <h2 id="guide-title" data-i18n="ui.guideTitle">사용 안내</h2>
     <ul id="guide-list"></ul>
   </section>
 
   <div class="stack">
     <button type="button" class="btn btn-primary mode-btn" id="btn-mode-object" data-mode="object"
             aria-labelledby="name-object" aria-describedby="desc-object">
-      <span class="mode-name" id="name-object">1. 물건 설명</span>
-      <span class="mode-desc" id="desc-object">손에 든 물건이나 앞에 놓인 물건을 알려 드립니다</span>
+      <span class="mode-name" id="name-object" data-i18n="modes.object.title">1. 물건 설명</span>
+      <span class="mode-desc" id="desc-object" data-i18n="modes.object.desc">손에 든 물건이나 앞에 놓인 물건을 알려 드립니다</span>
     </button>
     <button type="button" class="btn btn-primary mode-btn" id="btn-mode-scene" data-mode="scene"
             aria-labelledby="name-scene" aria-describedby="desc-scene">
-      <span class="mode-name" id="name-scene">2. 주변 살펴보기</span>
-      <span class="mode-desc" id="desc-scene">멈춰서 둘러보는 기능입니다. 길 안내는 하지 않습니다</span>
+      <span class="mode-name" id="name-scene" data-i18n="modes.scene.title">2. 주변 살펴보기</span>
+      <span class="mode-desc" id="desc-scene" data-i18n="modes.scene.desc">멈춰서 둘러보는 기능입니다. 길 안내는 하지 않습니다</span>
     </button>
     <button type="button" class="btn btn-primary mode-btn" id="btn-mode-doc" data-mode="doc"
             aria-labelledby="name-doc" aria-describedby="desc-doc">
-      <span class="mode-name" id="name-doc">3. 글자·문서 읽기</span>
-      <span class="mode-desc" id="desc-doc">문서를 적힌 그대로 읽어 드립니다. 사진은 휴대전화 밖으로 나가지 않습니다</span>
+      <span class="mode-name" id="name-doc" data-i18n="modes.doc.title">3. 글자·문서 읽기</span>
+      <span class="mode-desc" id="desc-doc" data-i18n="modes.doc.desc">문서를 적힌 그대로 읽어 드립니다. 사진은 휴대전화 밖으로 나가지 않습니다</span>
     </button>
 
-    <button type="button" class="btn" id="btn-settings" aria-expanded="false" aria-controls="settings">설정</button>
+    <button type="button" class="btn" id="btn-settings" aria-expanded="false" aria-controls="settings" data-i18n="ui.settings">설정</button>
 
-    <section id="settings" aria-label="설정" hidden>
+    <section id="settings" data-i18n-aria-label="ui.settings" aria-label="설정" hidden>
+      <!-- 언어: 항목마다 그 언어 자신의 표기와 lang 속성(화면읽기 발음). main.js가 js/i18n.js의 목록으로 채웁니다 -->
       <fieldset>
-        <legend>음성 출력 방식</legend>
-        <label class="choice"><input type="radio" name="outputMode" value="app"> 앱 음성</label>
-        <label class="choice"><input type="radio" name="outputMode" value="screenreader"> 화면읽기에 맡기기</label>
-        <label class="choice"><input type="radio" name="outputMode" value="silent"> 소리 없이 글자만</label>
+        <legend data-i18n="ui.legendLanguage">언어</legend>
+        <div id="language-list" class="choices2" data-language-list></div>
       </fieldset>
       <fieldset>
-        <legend>설명 길이</legend>
-        <label class="choice"><input type="radio" name="length" value="one"> 한 문장</label>
-        <label class="choice"><input type="radio" name="length" value="normal"> 보통</label>
-        <label class="choice"><input type="radio" name="length" value="detail"> 자세히</label>
+        <legend data-i18n="ui.legendOutput">음성 출력 방식</legend>
+        <label class="choice"><input type="radio" name="outputMode" value="app"> <span data-i18n="ui.optApp">앱 음성</span></label>
+        <label class="choice"><input type="radio" name="outputMode" value="screenreader"> <span data-i18n="ui.optScreenReader">화면읽기에 맡기기</span></label>
+        <label class="choice"><input type="radio" name="outputMode" value="silent"> <span data-i18n="ui.optSilent">소리 없이 글자만</span></label>
       </fieldset>
       <fieldset>
-        <legend>글자 크기</legend>
+        <legend data-i18n="ui.legendLength">설명 길이</legend>
+        <label class="choice"><input type="radio" name="length" value="one"> <span data-i18n="ui.optOne">한 문장</span></label>
+        <label class="choice"><input type="radio" name="length" value="normal"> <span data-i18n="ui.optNormal">보통</span></label>
+        <label class="choice"><input type="radio" name="length" value="detail"> <span data-i18n="ui.optDetail">자세히</span></label>
+      </fieldset>
+      <fieldset>
+        <legend data-i18n="ui.legendFont">글자 크기</legend>
         <div class="grid2">
-          <button type="button" class="btn" id="btn-font-down">글자 작게</button>
-          <button type="button" class="btn" id="btn-font-up">글자 크게</button>
+          <button type="button" class="btn" id="btn-font-down" data-i18n="ui.fontDown">글자 작게</button>
+          <button type="button" class="btn" id="btn-font-up" data-i18n="ui.fontUp">글자 크게</button>
         </div>
         <p id="font-status"></p>
       </fieldset>
       <fieldset>
-        <legend>화면 표시</legend>
-        <label class="choice"><input type="radio" name="theme" value="basic"> 기본 (밝은 배경)</label>
-        <label class="choice"><input type="radio" name="theme" value="sharp"> 선명하게 (어두운 배경)</label>
+        <legend data-i18n="ui.legendTheme">화면 표시</legend>
+        <label class="choice"><input type="radio" name="theme" value="basic"> <span data-i18n="ui.optBasic">기본 (밝은 배경)</span></label>
+        <label class="choice"><input type="radio" name="theme" value="sharp"> <span data-i18n="ui.optSharp">선명하게 (어두운 배경)</span></label>
       </fieldset>
     </section>
 
-    <button type="button" class="btn" id="btn-guide">사용 안내 듣기</button>
+    <button type="button" class="btn" id="btn-guide" data-i18n="ui.guideButton">사용 안내 듣기</button>
   </div>
 
   <p id="select-status" class="status" role="status" aria-live="polite"></p>
@@ -78,70 +89,72 @@
 
 <!-- ───────────── 실행 중 화면 (기획서 3-3절: 초점 순서 고정) ───────────── -->
 <main id="screen-run" hidden>
-  <h1 id="run-title">물건 설명</h1>
+  <h1 id="run-title"></h1>
 
   <!-- 1, 2: 일시정지와 종료가 초점 순서 맨 앞 -->
   <div class="grid2">
     <button type="button" class="btn btn-primary" id="btn-pause">일시정지</button>
-    <button type="button" class="btn" id="btn-stop">종료</button>
+    <button type="button" class="btn" id="btn-stop" data-i18n="ui.stop">종료</button>
   </div>
+
+  <p id="demo-banner-run" class="demo" data-i18n="ui.demoBanner" hidden></p>
 
   <!-- 카메라 미리보기: 저시력 사용자를 위해 보이되 화면읽기 탐색에서는 제외 -->
   <video id="preview" aria-hidden="true" playsinline muted tabindex="-1"></video>
 
   <!-- 3: 상태 문구. 알림 영역 속성은 음성 출력 방식에 따라 main.js가 바꿉니다(3-4절) -->
-  <h2 class="region-title" id="status-title">상태</h2>
+  <h2 class="region-title" id="status-title" data-i18n="ui.statusTitle">상태</h2>
   <p id="status" class="status" aria-labelledby="status-title"></p>
 
   <!-- 오류 영역: 정상 설명과 다른 자리, 다른 자료를 씁니다(4-1절) -->
   <div id="error" class="error" hidden>
-    <p><strong>오류</strong> <span id="error-text"></span></p>
-    <button type="button" class="btn" id="btn-camera-retry" hidden>다시 시도</button>
+    <p><strong data-i18n="ui.errorWord">오류</strong> <span id="error-text"></span></p>
+    <button type="button" class="btn" id="btn-camera-retry" data-i18n="ui.cameraRetry" hidden>다시 시도</button>
   </div>
 
   <!-- 4: 최근 설명 글자 영역 -->
-  <h2 class="region-title" id="result-title">최근 설명</h2>
+  <h2 class="region-title" id="result-title" data-i18n="ui.resultTitle">최근 설명</h2>
   <div id="result" class="result" aria-labelledby="result-title" role="region" tabindex="0"></div>
 
   <!-- 물건 설명·주변 살펴보기 버튼 (5~10) -->
   <div id="controls-cloud">
     <div class="grid2">
-      <button type="button" class="btn" id="btn-replay">다시 듣기</button>
-      <button type="button" class="btn" id="btn-detail">자세히</button>
+      <button type="button" class="btn" id="btn-replay" data-i18n="ui.replay">다시 듣기</button>
+      <button type="button" class="btn" id="btn-detail" data-i18n="ui.detail">자세히</button>
       <button type="button" class="btn" id="btn-fix" aria-pressed="false">고정</button>
-      <button type="button" class="btn" id="btn-recheck">다시 확인</button>
-      <button type="button" class="btn" id="btn-retry-same" hidden>같은 사진으로 다시 시도</button>
+      <button type="button" class="btn" id="btn-recheck" data-i18n="ui.recheck">다시 확인</button>
+      <button type="button" class="btn" id="btn-retry-same" data-i18n="ui.retrySame" hidden>같은 사진으로 다시 시도</button>
     </div>
     <form id="ask" class="ask" autocomplete="off">
-      <label for="q-input">질문하기</label>
+      <label for="q-input" data-i18n="ui.askLabel">질문하기</label>
       <input type="text" id="q-input" enterkeyhint="send" maxlength="200">
-      <button type="submit" class="btn" id="btn-ask">질문 보내기</button>
+      <button type="submit" class="btn" id="btn-ask" data-i18n="ui.askSend">질문 보내기</button>
     </form>
   </div>
 
-  <!-- 글자·문서 읽기 버튼 -->
+  <!-- 글자·문서 읽기 버튼. AI 요청 두 개는 프록시가 연결됐을 때만 보입니다 -->
   <div id="controls-doc" hidden>
     <div class="grid2">
-      <button type="button" class="btn" id="btn-prev">이전 문장</button>
-      <button type="button" class="btn" id="btn-next">다음 문장</button>
-      <button type="button" class="btn" id="btn-first">처음부터</button>
-      <button type="button" class="btn" id="btn-newdoc">새 문서 찍기</button>
-      <button type="button" class="btn" id="btn-ai-summary">AI에게 요약 요청</button>
-      <button type="button" class="btn" id="btn-ai-read">AI에게 판독 요청</button>
+      <button type="button" class="btn" id="btn-prev" data-i18n="ui.prev">이전 문장</button>
+      <button type="button" class="btn" id="btn-next" data-i18n="ui.next">다음 문장</button>
+      <button type="button" class="btn" id="btn-first" data-i18n="ui.first">처음부터</button>
+      <button type="button" class="btn" id="btn-newdoc" data-i18n="ui.newDoc">새 문서 찍기</button>
+      <button type="button" class="btn" id="btn-ai-summary" data-i18n="ui.aiSummary">AI에게 요약 요청</button>
+      <button type="button" class="btn" id="btn-ai-read" data-i18n="ui.aiRead">AI에게 판독 요청</button>
     </div>
   </div>
 
   <!-- 11~13: 말 빠르기·소리 크기·소리 끄기는 설정이 아니라 실행 화면에 항상 보입니다 -->
   <hr>
-  <div class="grid2" role="group" aria-label="음성 조절">
-    <button type="button" class="btn" id="btn-slower">천천히</button>
-    <button type="button" class="btn" id="btn-faster">빠르게</button>
-    <button type="button" class="btn" id="btn-quieter">작게</button>
-    <button type="button" class="btn" id="btn-louder">크게</button>
+  <div class="grid2" role="group" data-i18n-aria-label="ui.speechGroup" aria-label="음성 조절">
+    <button type="button" class="btn" id="btn-slower" data-i18n="ui.slower">천천히</button>
+    <button type="button" class="btn" id="btn-faster" data-i18n="ui.faster">빠르게</button>
+    <button type="button" class="btn" id="btn-quieter" data-i18n="ui.quieter">작게</button>
+    <button type="button" class="btn" id="btn-louder" data-i18n="ui.louder">크게</button>
     <button type="button" class="btn" id="btn-mute" aria-pressed="false">소리 끄기</button>
   </div>
 </main>
 
-<noscript><p>이 서비스는 자바스크립트가 켜져 있어야 동작합니다.</p></noscript>
+<noscript><p lang="en">This service needs JavaScript. / 자바스크립트가 켜져 있어야 동작합니다.</p></noscript>
 </body>
 </html>
