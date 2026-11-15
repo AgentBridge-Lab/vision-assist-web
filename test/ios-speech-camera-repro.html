@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카메라 + 음성 합성 동시 사용 시험 (WebKit 218815)</title>
+<!--
+  목적: 기획서 v2 로드맵 1단계 V1 / 미해결 항목 U1.
+  "마이크 없이 카메라만 켠 상태에서 음성 합성을 부르면 카메라 영상이 멈추는가"를 자기 아이폰에서 1분 안에 판정합니다.
+  - 마이크는 요청하지 않습니다(audio: false).
+  - 파일 하나로 끝납니다. 외부 스크립트·서버 통신이 없습니다. 사진은 어디로도 전송되지 않습니다.
+  - 색은 docs/DESIGN_TOKENS.md의 값만 썼습니다.
+-->
+<style>
+  :root { --c-text:#0b0c0c; --c-bg:#ffffff; --c-error:#d4351c; --c-success:#00703c; --c-focus:#ffdd00; --c-focus-text:#0b0c0c; --c-button-text:#ffffff; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--c-bg); color:var(--c-text); font-size:20px; line-height:1.5;
+         font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif; word-break:keep-all; overflow-wrap:anywhere; }
+  h1 { font-size:20px; font-weight:700; margin:0 0 16px; }
+  p, ol { margin:0 0 16px; }
+  button { display:block; width:100%; min-height:72px; margin:0 0 16px; padding:16px; border:2px solid var(--c-text); border-radius:0;
+           background:var(--c-success); color:var(--c-button-text); font:inherit; font-weight:700; }
+  button:disabled { background:var(--c-bg); color:var(--c-text); border-style:dashed; }
+  button.plain { background:var(--c-bg); color:var(--c-text); min-height:48px; }
+  :focus-visible { outline:3px solid transparent; background-color:var(--c-focus); box-shadow:0 -2px var(--c-focus),0 4px var(--c-focus-text); color:var(--c-focus-text); }
+  video { display:block; width:100%; max-height:240px; object-fit:cover; background:var(--c-text); border:2px solid var(--c-text); margin:0 0 16px; }
+  #verdict { margin:0 0 16px; padding:16px; border:2px solid var(--c-text); font-weight:700; }
+  #verdict .big { display:block; font-size:30px; }
+  #verdict.pass { background:var(--c-success); color:var(--c-button-text); }
+  #verdict.fail { background:var(--c-error); color:var(--c-button-text); }
+  pre { font-size:15px; white-space:pre-wrap; border:2px solid var(--c-text); padding:8px; margin:0 0 16px; max-height:320px; overflow:auto; }
+</style>
+</head>
+<body>
+<h1>카메라 + 음성 합성 동시 사용 시험</h1>
+<ol>
+  <li>아이폰 옆면의 무음 스위치를 풀고 소리를 키웁니다.</li>
+  <li>「1. 카메라 켜기」를 누르고 카메라를 허용합니다. 마이크는 묻지 않습니다.</li>
+  <li>「2. 시험 시작」을 누르고 약 1분 기다립니다. 음성이 20번 나옵니다.</li>
+</ol>
+
+<button type="button" id="btn-camera">1. 카메라 켜기</button>
+<button type="button" id="btn-test" disabled>2. 시험 시작 (약 1분)</button>
+
+<video id="video" playsinline muted aria-hidden="true"></video>
+
+<div id="verdict" role="status" aria-live="polite"><span class="big" id="verdict-big">대기 중</span><span id="verdict-text">카메라를 먼저 켜 주세요.</span></div>
+
+<button type="button" class="plain" id="btn-copy">기록 복사</button>
+<pre id="log" aria-label="시험 기록"></pre>
+
+<script>
+(function () {
+  'use strict';
+  var ROUNDS = 20;            // V1: 20회 연속 발화
+  var AFTER_MS = 1000;        // V1: 발화 종료 1초 뒤 프레임 변화 감지
+  var BASELINE_MS = 1500;     // 시험 전에 카메라 자체가 도는지 확인
+  var SPEECH_TIMEOUT_MS = 8000;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var video = $('video'), logEl = $('log');
+  var stream = null, track = null;
+  var frames = 0;             // 화면에 실제로 표시된 프레임 수
+  var muteEvents = 0, endedEvents = 0;
+  var probe = document.createElement('canvas'); probe.width = probe.height = 32;
+  var pctx = probe.getContext('2d', { willReadFrequently: true });
+
+  function log(s) { logEl.textContent += s + '\n'; logEl.scrollTop = logEl.scrollHeight; }
+  function verdict(cls, big, text) { var v = $('verdict'); v.className = cls; $('verdict-big').textContent = big; $('verdict-text').textContent = text; }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  // 프레임 세기: 표시된 프레임마다 불리는 콜백이 있으면 그것을, 없으면 영상 시각의 변화를 셉니다
+  var hasRVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+  function countFrames() {
+    if (hasRVFC) {
+      var onFrame = function () { frames++; video.requestVideoFrameCallback(onFrame); };
+      video.requestVideoFrameCallback(onFrame);
+    } else {
+      var last = -1;
+      setInterval(function () { if (video.currentTime !== last) { last = video.currentTime; frames++; } }, 50);
+    }
+  }
+  function pixels() {
+    try { pctx.drawImage(video, 0, 0, 32, 32); return pctx.getImageData(0, 0, 32, 32).data; } catch (e) { return null; }
+  }
+  function pixelDiff(a, b) {
+    if (!a || !b) return -1;
+    var s = 0; for (var i = 0; i < a.length; i += 4) s += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
+    return s;
+  }
+  // 창(ms) 동안 표시된 프레임 수와 화소 변화량
+  async function measure(ms) {
+    var f0 = frames, p0 = pixels();
+    await sleep(ms);
+    return { frames: frames - f0, diff: pixelDiff(p0, pixels()) };
+  }
+
+  function speakOnce(text) {
+    return new Promise(function (resolve) {
+      var u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR';
+      var started = false, done = false, f0 = frames;
+      var finish = function (how) { if (done) return; done = true; clearTimeout(timer); resolve({ started: started, how: how, framesDuring: frames - f0 }); };
+      var timer = setTimeout(function () { speechSynthesis.cancel(); finish('timeout'); }, SPEECH_TIMEOUT_MS);
+      u.onstart = function () { started = true; };
+      u.onend = function () { finish('end'); };
+      u.onerror = function (e) { finish('error:' + (e.error || '')); };
+      window.__utter = u; // 발화 객체가 회수되어 이벤트가 사라지는 문제 방지
+      speechSynthesis.speak(u);
+    });
+  }
+
+  $('btn-camera').addEventListener('click', async function () {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      verdict('', '판정 불가', '이 주소에서는 카메라를 쓸 수 없습니다. https 주소로 열어 주세요.');
+      return;
+    }
+    try {
+      // 마이크 없이 카메라만 (U1: 카메라 단독 조건 확인이 목적)
+      stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+    } catch (e) {
+      verdict('', '판정 불가', '카메라를 켜지 못했습니다: ' + e.name);
+      log('getUserMedia 실패: ' + e.name + ' ' + e.message);
+      return;
+    }
+    track = stream.getVideoTracks()[0];
+    track.addEventListener('mute', function () { muteEvents++; log('  [트랙 mute 이벤트]'); });
+    track.addEventListener('unmute', function () { log('  [트랙 unmute 이벤트]'); });
+    track.addEventListener('ended', function () { endedEvents++; log('  [트랙 ended 이벤트]'); });
+    video.srcObject = stream;
+    try { await video.play(); } catch (e) { log('video.play 실패: ' + e.name); }
+    countFrames();
+    log('기기: ' + navigator.userAgent);
+    log('오디오 트랙 수(0이어야 함): ' + stream.getAudioTracks().length);
+    log('프레임 세는 방식: ' + (hasRVFC ? 'requestVideoFrameCallback' : 'currentTime 변화'));
+    $('btn-camera').disabled = true;
+    $('btn-test').disabled = false;
+    verdict('', '준비됨', '「2. 시험 시작」을 눌러 주세요.');
+  });
+
+  $('btn-test').addEventListener('click', async function () {
+    if (!('speechSynthesis' in window)) { verdict('', '판정 불가', '이 브라우저에는 음성 합성이 없습니다.'); return; }
+    $('btn-test').disabled = true;
+    // 첫 발화는 반드시 이 누름 동작 안에서 시작합니다(iOS는 사용자 동작 없이 음성을 시작할 수 없음)
+    var first = speakOnce('시험을 시작합니다.');
+    verdict('', '시험 중', '카메라가 도는지 먼저 확인합니다.');
+    var base = await measure(BASELINE_MS);
+    var firstRes = await first;
+    log('기준(발화 시작 직후 ' + BASELINE_MS + 'ms): 프레임 ' + base.frames + ', 화소 변화 ' + base.diff + ', 첫 발화 ' + firstRes.how);
+
+    var stopped = 0, notSpoken = firstRes.started ? 0 : 1, rows = [];
+    for (var i = 1; i <= ROUNDS; i++) {
+      verdict('', '시험 중 ' + i + '/' + ROUNDS, '음성을 재생하고 카메라가 멈추는지 봅니다.');
+      var sp = await speakOnce(i + '번 시험 문장입니다.');
+      var after = await measure(AFTER_MS);
+      var alive = after.frames > 0;
+      if (!alive) stopped++;
+      if (!sp.started) notSpoken++;
+      rows.push(alive);
+      log(i + '회: 발화 ' + (sp.started ? sp.how : '시작 안 됨(' + sp.how + ')') + ', 발화 중 프레임 ' + sp.framesDuring +
+          ', 발화 후 1초 프레임 ' + after.frames + ', 화소 변화 ' + after.diff + ', 트랙 ' + track.readyState + (track.muted ? '/muted' : '') +
+          ' → ' + (alive ? '동작' : '멈춤'));
+    }
+
+    log('합계: 멈춤 ' + stopped + '/' + ROUNDS + ', mute 이벤트 ' + muteEvents + ', ended 이벤트 ' + endedEvents + ', 발화 시작 실패 ' + notSpoken);
+    if (notSpoken > ROUNDS / 2) {
+      verdict('', '판정 불가', '음성이 재생되지 않았습니다(' + notSpoken + '회). 무음 스위치와 음량을 확인하고 새로 고친 뒤 다시 해 주세요.');
+    } else if (stopped === 0 && muteEvents === 0 && endedEvents === 0 && track.readyState === 'live') {
+      verdict('pass', 'PASS', '음성을 ' + ROUNDS + '번 재생한 뒤에도 카메라가 ' + ROUNDS + '번 모두 계속 동작했습니다. 이 기기에서는 문제가 재현되지 않았습니다.');
+    } else {
+      verdict('fail', 'FAIL', '음성 재생 뒤 카메라가 멈추거나 끊겼습니다. 멈춤 ' + stopped + '/' + ROUNDS + '회, 트랙 mute ' + muteEvents + '회, ended ' + endedEvents + '회. 이 기기에서 문제가 재현됩니다.');
+    }
+    $('btn-test').disabled = false;
+  });
+
+  $('btn-copy').addEventListener('click', function () {
+    var text = $('verdict-big').textContent + ' — ' + $('verdict-text').textContent + '\n' + logEl.textContent;
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { $('btn-copy').textContent = '복사했습니다'; }, function () { $('btn-copy').textContent = '복사하지 못했습니다. 화면을 캡처해 주세요'; });
+    else $('btn-copy').textContent = '복사하지 못했습니다. 화면을 캡처해 주세요';
+  });
+})();
+</script>
+</body>
+</html>

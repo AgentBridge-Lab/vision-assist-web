@@ -1,0 +1,93 @@
+// @ts-check
+/**
+ * 설정 한 곳 모음 (기획서 v2 2-2절: "수치는 모두 [가정]인 초기값이며 설정 파일 한 곳에 모읍니다").
+ * [가정] 표시가 붙은 값은 근거 문헌이 없는 초기값입니다. 실측(로드맵 1단계 V1~V8, 5단계 시험)으로 교체합니다.
+ * [구현 가정]은 기획서에 수치가 없어 구현자가 임시로 정한 값입니다.
+ */
+export const CONFIG = Object.freeze({
+  // ── 프록시 ──────────────────────────────────────────────────────────────
+  /** 빈 문자열이면 worker/worker.js를 브라우저 안에서 직접 실행합니다(내장 목 모드, 외부 전송 없음).
+   *  배포한 프록시 주소를 넣으면 그 주소로 보냅니다. 예: 'https://example.workers.dev' */
+  PROXY_URL: '',
+  REQUEST_TIMEOUT_MS: 8000,        // [가정] 4-1절 네트워크 시간 초과
+  SERVICE_RETRY_MS: 5000,          // 4-1절 서비스 장애 "5초 뒤 1회만"
+  NETWORK_RETRY_MS: 10000,         // [구현 가정] 브라우저가 온라인이라고 보고하는데 프록시에 닿지 않을 때 새 프레임으로 1회 재시도
+
+  // ── 관찰 (2-2절) ────────────────────────────────────────────────────────
+  OBSERVE_INTERVAL_MS: 500,        // [가정] 관찰 주기
+  SAMPLE_SIZE: 64,                 // 축소 프레임 한 변(흑백)
+
+  // ── 게이트 1: 품질 ──────────────────────────────────────────────────────
+  QUALITY_MIN_BRIGHTNESS: 35,      // [구현 가정] 평균 밝기 하한(0~255). 기획서: "실측으로 결정"
+  QUALITY_MIN_SHARPNESS: 12,       // [구현 가정] 라플라시안 분산 하한. 기획서: "실측으로 결정"
+  QUALITY_HOLD_MS: 1000,           // [구현 가정] 품질 불량이 이만큼 이어져야 안내
+  QUALITY_REPEAT_MS: 10000,        // [가정] 4-2절 같은 품질 안내 반복 금지 시간
+  QUALITY_ESCALATE_COUNT: 3,       // 4-2절 같은 문제가 세 번 연속되면 안내 변경
+
+  // ── 게이트 2: 안정 ──────────────────────────────────────────────────────
+  MOTION_DIFF_MAX: 6,              // [구현 가정] 연속 축소 프레임의 평균 절대 차(0~255)가 이 값 이하면 "멈춤"
+  STABLE_MS: 1000,                 // [가정] 안정 유지 시간
+
+  // ── 게이트 3: 변화 ──────────────────────────────────────────────────────
+  CHANGE_HAMMING_MIN: 12,          // [가정] 64비트 지각 해시 기준, 마지막 전송 프레임 대비
+
+  // ── 게이트 4: 쿨다운 ────────────────────────────────────────────────────
+  COOLDOWN_MS: Object.freeze({
+    object: 5000,                  // [가정] 물건 설명. 근거 없는 값(U19)
+    scene: 8000,                   // [가정] 주변 살펴보기
+    doc: 3000,                     // [구현 가정] 기기 내 OCR 재시도 간격(호출 비용은 없음)
+  }),
+  MAX_INFLIGHT: 1,                 // 동시 진행 호출 수
+
+  // ── 게이트 5: 상한 (2-4절). 프록시도 같은 값을 다시 집행합니다 ──────────
+  SESSION_CALL_LIMIT: 40,          // [가정]
+  REMAINING_NOTICE_AT: 10,         // [가정] 4-3절 남은 횟수 안내 시점
+
+  // ── 발화 억제·방치 방지 (2-2절) ─────────────────────────────────────────
+  STALE_MS: 6000,                  // [가정] 요청 후 이 시간이 지난 응답은 자동 낭독하지 않음
+  NO_CHANGE_NOTICE_MS: 60000,      // [가정]
+  IDLE_PAUSE_MS: 180000,           // [가정] 조작 없이 3분이면 자동 일시정지
+  FRAME_WAIT_NOTICE_MS: 5000,      // 3-5절 프레임 대기 안내
+  SCENE_MOVING_NOTICE_MS: 3000,    // [가정] 3-3절 주변 살펴보기 움직임 안내
+  ANALYZING_NOTICE_MS: 2000,       // 3-5절 "확인하는 중입니다."
+  SLOW_NOTICE_MS: 5000,            // 3-5절 "응답이 늦어지고 있습니다."
+
+  // ── 카메라 ──────────────────────────────────────────────────────────────
+  CAMERA_STALL_MS: 3000,           // 1-5절 프레임 미갱신 판정
+  IMAGE_LONG_SIDE: 1024,           // [가정] 2-1절 전송 해상도 1024×768
+  IMAGE_SHORT_SIDE: 768,
+  IMAGE_MAX_BYTES: 400 * 1024,     // [가정] 2-4절 요청 크기
+  IMAGE_JPEG_QUALITIES: Object.freeze([0.8, 0.6, 0.4]), // [구현 가정] 크기 초과 시 차례로 낮춤
+
+  // ── 음성 (3-3절, 3-4절) ─────────────────────────────────────────────────
+  TOUCH_HOLD_MS: 2000,             // [가정] 마지막 조작 후 자동 발화 보류
+  WAIT_EARCON_MS: 2000,            // 3-4절 분석 대기 효과음 간격
+  RATE_STEPS: Object.freeze([0.7, 0.85, 1.0, 1.2, 1.45, 1.7]), // [구현 가정] 말 빠르기 단계 (V7에서 검증)
+  RATE_DEFAULT_INDEX: 2,
+  VOLUME_STEPS: Object.freeze([0.4, 0.7, 1.0]),                 // [구현 가정] 앱 음성 크기 단계 (V7)
+  VOLUME_DEFAULT_INDEX: 2,
+  SPEECH_START_TIMEOUT_MS: 4000,   // [구현 가정] 발화가 시작되지 않으면 실패로 처리
+
+  // ── 기기 내 OCR (3단계) ─────────────────────────────────────────────────
+  // CDN 버전 고정. index.html의 <script> 주소·무결성 해시와 함께 바꿔야 합니다.
+  OCR_WORKER_PATH: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+  OCR_CORE_PATH: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+  OCR_LANG_PATH: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/kor@1.0.0/4.0.0_best_int',
+  OCR_LANG: 'kor',
+  OCR_LONG_SIDE: 1600,             // [구현 가정] OCR에 넘기는 사진의 긴 변
+  OCR_LINE_DROP_CONF: 40,          // [구현 가정] 이 신뢰도 미만 줄은 읽지 않고 "일부를 읽지 못했습니다"
+  OCR_LINE_UNSURE_CONF: 70,        // [구현 가정] 이 신뢰도 미만 줄은 "확실하지 않습니다만"을 앞에 붙임
+  OCR_MIN_CHARS: 4,                // [구현 가정] 읽힌 글자가 이보다 적으면 문서가 아니라고 봄
+  CONFIRM_WINDOW_MS: 10000,        // [구현 가정] "한 번 더 누르세요" 유효 시간
+
+  // ── 화면 ────────────────────────────────────────────────────────────────
+  // DESIGN_TOKENS.md 5절의 5단계(작게·보통·조금 크게·크게·가장 크게). 'm'은 data-fs 속성 없음(17px)
+  FONT_STEPS: Object.freeze([
+    Object.freeze({ key: 's', name: '작게' }),
+    Object.freeze({ key: 'm', name: '보통' }),
+    Object.freeze({ key: 'l', name: '조금 크게' }),
+    Object.freeze({ key: 'xl', name: '크게' }),
+    Object.freeze({ key: 'xxl', name: '가장 크게' }),
+  ]),
+  FONT_DEFAULT_INDEX: 1,
+});

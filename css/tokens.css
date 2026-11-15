@@ -1,0 +1,60 @@
+/*
+ * 디자인 토큰 — docs/DESIGN_TOKENS.md 3·4·5·6절을 그대로 옮긴 파일입니다.
+ * 색과 글자 크기를 여기서 새로 만들지 않습니다. 값의 근거는 DESIGN_TOKENS.md를 보십시오.
+ * 팔레트 출처: GOV.UK Design System (alphagov/govuk-frontend, MIT). LICENSE 참조.
+ */
+:root {
+  /* 3절 색상 */
+  --c-text:        #0b0c0c;
+  --c-text-weak:   #505a5f;
+  --c-bg:          #ffffff;
+  --c-bg-alt:      #f3f2f1;
+  --c-link:        #1d70b8;
+  --c-link-visited:#4c2c92;
+  --c-error:       #d4351c;
+  --c-success:     #00703c;
+  --c-focus:       #ffdd00;
+  --c-focus-text:  #0b0c0c;
+  --c-divider:     #b1b4b6;  /* 장식 구분선 전용. 경계·상태·컨트롤 외곽선에 쓰지 않음 (2절 규칙) */
+  /* 2절 표 "버튼 글자 #ffffff on #00703c = 6.21:1". 선명 모드에서도 바뀌지 않아야 하므로 별도 이름을 둠 */
+  --c-button-text: #ffffff;
+
+  /* 5절 글자 크기: 보통 */
+  --fs-base: 17px;
+
+  /* 6절 간격·터치 타깃 */
+  --touch-min: 48px;
+  --mode-btn-min: 72px;
+  --gap: 16px;      /* 버튼 간 최소 12px 이상이면서 8px 배수 */
+  --pad-x: 16px;
+  --unit: 8px;
+}
+
+/* 5절 글자 크기 단계 */
+:root[data-fs="xs"] { --fs-base: 15px; }
+:root[data-fs="s"]  { --fs-base: 16px; }
+:root[data-fs="l"]  { --fs-base: 20px; }
+:root[data-fs="xl"] { --fs-base: 24px; }
+:root[data-fs="xxl"]{ --fs-base: 30px; }
+
+/* 3절: 선명 모드는 --c-text와 --c-bg를 교환 (대비 19.59:1 유지) */
+:root[data-theme="sharp"] {
+  --c-text: #ffffff;
+  --c-bg:   #0b0c0c;
+}
+
+body {
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  /* 5절 폰트: Pretendard는 라이선스 원문 확인 전이라 뺐고 시스템 폰트 스택만 사용 */
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+               "Malgun Gothic", system-ui, sans-serif;
+}
+
+/* 4절 포커스 표시 (GOV.UK 방식 그대로) */
+:focus-visible {
+  outline: 3px solid transparent;
+  background-color: var(--c-focus);
+  box-shadow: 0 -2px var(--c-focus), 0 4px var(--c-focus-text);
+  color: var(--c-focus-text);
+}

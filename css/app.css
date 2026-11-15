@@ -1,0 +1,176 @@
+/*
+ * 화면 스타일. 색·글자 크기·간격은 css/tokens.css(= docs/DESIGN_TOKENS.md)의 값만 씁니다.
+ * - 글자 두께는 400, 700만
+ * - 의미가 있는 테두리는 전부 --c-text. --c-divider(#b1b4b6)는 장식 구분선(hr) 한 곳에만
+ * - 선명 모드에서 --c-text-weak는 어두운 배경 대비가 모자라므로 글자·테두리에 쓰지 않습니다
+ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-weight: 400;
+  word-break: keep-all;
+  overflow-wrap: anywhere; /* 200% 확대에서도 가로로 밀지 않게 */
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--gap) var(--pad-x) calc(var(--unit) * 4);
+}
+
+[hidden] { display: none !important; }
+
+h1, h2, legend, p, ul { margin: 0 0 var(--gap); }
+h1, h2, legend { font-size: var(--fs-base); font-weight: 700; }
+ul { padding-left: calc(var(--unit) * 3); }
+li { margin-bottom: var(--unit); }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--c-divider); /* 장식 전용 */
+  margin: calc(var(--unit) * 3) 0;
+}
+
+/* ── 버튼 ─────────────────────────────────────────── */
+.btn {
+  display: block;
+  width: 100%;
+  min-height: var(--touch-min);
+  margin: 0;
+  padding: var(--unit) var(--pad-x);
+  border: 2px solid var(--c-text);
+  border-radius: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.btn-primary {
+  background: var(--c-success);
+  color: var(--c-button-text);
+}
+.mode-btn {
+  min-height: var(--mode-btn-min);
+  padding: var(--gap) var(--pad-x);
+  text-align: left;
+}
+.mode-name, .mode-desc { display: block; }
+.mode-desc { font-weight: 400; }
+
+.stack > * + * { margin-top: var(--gap); }
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+
+/* ── 설정 ─────────────────────────────────────────── */
+#settings, #guide {
+  border: 2px solid var(--c-text);
+  padding: var(--gap) var(--pad-x) 0;
+}
+fieldset {
+  border: 0;
+  margin: 0 0 var(--gap);
+  padding: 0;
+  min-width: 0;
+}
+legend { padding: 0; }
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  min-height: var(--touch-min);
+  cursor: pointer;
+}
+.choice input {
+  flex: none;
+  width: calc(var(--unit) * 3);
+  height: calc(var(--unit) * 3);
+  margin: 0;
+  accent-color: var(--c-text);
+}
+
+/* ── 실행 화면 ─────────────────────────────────────── */
+#preview {
+  display: block;
+  width: 100%;
+  max-height: calc(var(--unit) * 30);
+  object-fit: cover;
+  background: var(--c-text);
+  border: 2px solid var(--c-text);
+  margin-bottom: var(--gap);
+}
+.region-title { margin-bottom: var(--unit); }
+.status {
+  margin-top: var(--gap);
+  min-height: var(--touch-min);
+  font-weight: 700;
+}
+.result {
+  min-height: calc(var(--unit) * 12);
+  margin-bottom: var(--gap);
+  padding: var(--gap) var(--pad-x) 0;
+  border: 2px solid var(--c-text);
+}
+.result p { margin-bottom: var(--gap); }
+.result .label { display: block; font-weight: 700; }
+.result .current {
+  padding-left: var(--pad-x);
+  border-left: 4px solid var(--c-text);
+  font-weight: 700;
+}
+.error {
+  margin-bottom: var(--gap);
+  padding: var(--gap) var(--pad-x) 0;
+  border: 2px solid var(--c-text);
+  border-left: 8px solid var(--c-error);
+  font-weight: 700;
+}
+.error .btn { margin-bottom: var(--gap); }
+
+.ask label { display: block; font-weight: 700; margin-bottom: var(--unit); }
+.ask input {
+  display: block;
+  width: 100%;
+  min-height: var(--touch-min);
+  margin-bottom: var(--gap);
+  padding: var(--unit);
+  border: 2px solid var(--c-text);
+  border-radius: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font: inherit;
+}
+.ask { margin-bottom: var(--gap); }
+
+/*
+ * 포커스 표시: DESIGN_TOKENS.md 4절 값을 그대로 다시 선언합니다.
+ * tokens.css의 :focus-visible과 같은 값이며, 위의 .btn·input 배경 선언에 밀리지 않게 하려는 목적뿐입니다.
+ */
+.btn:focus-visible,
+.ask input:focus-visible,
+.result:focus-visible,
+.choice input:focus-visible {
+  outline: 3px solid transparent;
+  background-color: var(--c-focus);
+  box-shadow: 0 -2px var(--c-focus), 0 4px var(--c-focus-text);
+  color: var(--c-focus-text);
+}
+/* 라디오는 배경색이 보이지 않으므로 감싼 줄 전체에 같은 포커스 표시를 줍니다 */
+.choice:has(input:focus-visible) {
+  background-color: var(--c-focus);
+  box-shadow: 0 -2px var(--c-focus), 0 4px var(--c-focus-text);
+  color: var(--c-focus-text);
+}

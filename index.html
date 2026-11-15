@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시각 보조</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/app.css">
+  <!-- 기기 내 OCR 엔진. 버전 고정(5.1.1) + 무결성 해시. 바꿀 때는 js/config.js의 OCR_* 주소도 함께 바꿉니다. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"
+          integrity="sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F"
+          crossorigin="anonymous"></script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+
+<!-- ───────────── 모드 선택 화면 (기획서 3-2절: 초점 순서 고정) ───────────── -->
+<main id="screen-select">
+  <h1 id="app-title">시각 보조</h1>
+
+  <section id="guide" aria-labelledby="guide-title" hidden>
+    <h2 id="guide-title">사용 안내</h2>
+    <ul id="guide-list"></ul>
+  </section>
+
+  <div class="stack">
+    <button type="button" class="btn btn-primary mode-btn" id="btn-mode-object" data-mode="object"
+            aria-labelledby="name-object" aria-describedby="desc-object">
+      <span class="mode-name" id="name-object">1. 물건 설명</span>
+      <span class="mode-desc" id="desc-object">손에 든 물건이나 앞에 놓인 물건을 알려 드립니다</span>
+    </button>
+    <button type="button" class="btn btn-primary mode-btn" id="btn-mode-scene" data-mode="scene"
+            aria-labelledby="name-scene" aria-describedby="desc-scene">
+      <span class="mode-name" id="name-scene">2. 주변 살펴보기</span>
+      <span class="mode-desc" id="desc-scene">멈춰서 둘러보는 기능입니다. 길 안내는 하지 않습니다</span>
+    </button>
+    <button type="button" class="btn btn-primary mode-btn" id="btn-mode-doc" data-mode="doc"
+            aria-labelledby="name-doc" aria-describedby="desc-doc">
+      <span class="mode-name" id="name-doc">3. 글자·문서 읽기</span>
+      <span class="mode-desc" id="desc-doc">문서를 적힌 그대로 읽어 드립니다. 사진은 휴대전화 밖으로 나가지 않습니다</span>
+    </button>
+
+    <button type="button" class="btn" id="btn-settings" aria-expanded="false" aria-controls="settings">설정</button>
+
+    <section id="settings" aria-label="설정" hidden>
+      <fieldset>
+        <legend>음성 출력 방식</legend>
+        <label class="choice"><input type="radio" name="outputMode" value="app"> 앱 음성</label>
+        <label class="choice"><input type="radio" name="outputMode" value="screenreader"> 화면읽기에 맡기기</label>
+        <label class="choice"><input type="radio" name="outputMode" value="silent"> 소리 없이 글자만</label>
+      </fieldset>
+      <fieldset>
+        <legend>설명 길이</legend>
+        <label class="choice"><input type="radio" name="length" value="one"> 한 문장</label>
+        <label class="choice"><input type="radio" name="length" value="normal"> 보통</label>
+        <label class="choice"><input type="radio" name="length" value="detail"> 자세히</label>
+      </fieldset>
+      <fieldset>
+        <legend>글자 크기</legend>
+        <div class="grid2">
+          <button type="button" class="btn" id="btn-font-down">글자 작게</button>
+          <button type="button" class="btn" id="btn-font-up">글자 크게</button>
+        </div>
+        <p id="font-status"></p>
+      </fieldset>
+      <fieldset>
+        <legend>화면 표시</legend>
+        <label class="choice"><input type="radio" name="theme" value="basic"> 기본 (밝은 배경)</label>
+        <label class="choice"><input type="radio" name="theme" value="sharp"> 선명하게 (어두운 배경)</label>
+      </fieldset>
+    </section>
+
+    <button type="button" class="btn" id="btn-guide">사용 안내 듣기</button>
+  </div>
+
+  <p id="select-status" class="status" role="status" aria-live="polite"></p>
+</main>
+
+<!-- ───────────── 실행 중 화면 (기획서 3-3절: 초점 순서 고정) ───────────── -->
+<main id="screen-run" hidden>
+  <h1 id="run-title">물건 설명</h1>
+
+  <!-- 1, 2: 일시정지와 종료가 초점 순서 맨 앞 -->
+  <div class="grid2">
+    <button type="button" class="btn btn-primary" id="btn-pause">일시정지</button>
+    <button type="button" class="btn" id="btn-stop">종료</button>
+  </div>
+
+  <!-- 카메라 미리보기: 저시력 사용자를 위해 보이되 화면읽기 탐색에서는 제외 -->
+  <video id="preview" aria-hidden="true" playsinline muted tabindex="-1"></video>
+
+  <!-- 3: 상태 문구. 알림 영역 속성은 음성 출력 방식에 따라 main.js가 바꿉니다(3-4절) -->
+  <h2 class="region-title" id="status-title">상태</h2>
+  <p id="status" class="status" aria-labelledby="status-title"></p>
+
+  <!-- 오류 영역: 정상 설명과 다른 자리, 다른 자료를 씁니다(4-1절) -->
+  <div id="error" class="error" hidden>
+    <p><strong>오류</strong> <span id="error-text"></span></p>
+    <button type="button" class="btn" id="btn-camera-retry" hidden>다시 시도</button>
+  </div>
+
+  <!-- 4: 최근 설명 글자 영역 -->
+  <h2 class="region-title" id="result-title">최근 설명</h2>
+  <div id="result" class="result" aria-labelledby="result-title" role="region" tabindex="0"></div>
+
+  <!-- 물건 설명·주변 살펴보기 버튼 (5~10) -->
+  <div id="controls-cloud">
+    <div class="grid2">
+      <button type="button" class="btn" id="btn-replay">다시 듣기</button>
+      <button type="button" class="btn" id="btn-detail">자세히</button>
+      <button type="button" class="btn" id="btn-fix" aria-pressed="false">고정</button>
+      <button type="button" class="btn" id="btn-recheck">다시 확인</button>
+      <button type="button" class="btn" id="btn-retry-same" hidden>같은 사진으로 다시 시도</button>
+    </div>
+    <form id="ask" class="ask" autocomplete="off">
+      <label for="q-input">질문하기</label>
+      <input type="text" id="q-input" enterkeyhint="send" maxlength="200">
+      <button type="submit" class="btn" id="btn-ask">질문 보내기</button>
+    </form>
+  </div>
+
+  <!-- 글자·문서 읽기 버튼 -->
+  <div id="controls-doc" hidden>
+    <div class="grid2">
+      <button type="button" class="btn" id="btn-prev">이전 문장</button>
+      <button type="button" class="btn" id="btn-next">다음 문장</button>
+      <button type="button" class="btn" id="btn-first">처음부터</button>
+      <button type="button" class="btn" id="btn-newdoc">새 문서 찍기</button>
+      <button type="button" class="btn" id="btn-ai-summary">AI에게 요약 요청</button>
+      <button type="button" class="btn" id="btn-ai-read">AI에게 판독 요청</button>
+    </div>
+  </div>
+
+  <!-- 11~13: 말 빠르기·소리 크기·소리 끄기는 설정이 아니라 실행 화면에 항상 보입니다 -->
+  <hr>
+  <div class="grid2" role="group" aria-label="음성 조절">
+    <button type="button" class="btn" id="btn-slower">천천히</button>
+    <button type="button" class="btn" id="btn-faster">빠르게</button>
+    <button type="button" class="btn" id="btn-quieter">작게</button>
+    <button type="button" class="btn" id="btn-louder">크게</button>
+    <button type="button" class="btn" id="btn-mute" aria-pressed="false">소리 끄기</button>
+  </div>
+</main>
+
+<noscript><p>이 서비스는 자바스크립트가 켜져 있어야 동작합니다.</p></noscript>
+</body>
+</html>
