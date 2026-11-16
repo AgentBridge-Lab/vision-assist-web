@@ -78,20 +78,19 @@ export const CONFIG = Object.freeze({
   VOLUME_DEFAULT_INDEX: 2,
   SPEECH_START_TIMEOUT_MS: 4000,   // [구현 가정] 발화가 시작되지 않으면 실패로 처리
 
-  // ── 기기 내 OCR (3단계) ─────────────────────────────────────────────────
-  // CDN 버전 고정. index.html의 <script> 주소·무결성 해시와 함께 바꿔야 합니다.
-  OCR_WORKER_PATH: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
-  OCR_CORE_PATH: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
-  // 언어 자료: 고른 언어 + 영어만 그때 받습니다(8개를 미리 받지 않음). {lang} 자리에 kor, chi_sim, eng, spa, fra, deu, tha, jpn
-  // 크기(압축): kor 1.5MB · chi_sim 1.6MB · eng 2.8MB · spa 2.0MB · fra 0.7MB · deu 1.3MB · tha 0.9MB · jpn 1.9MB
-  OCR_DATA_URL: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/{lang}@1.0.0/4.0.0_best_int/{lang}.traineddata.gz',
+  // ── 기기 내 OCR (3단계) — PaddleOCR PP-OCRv5 ────────────────────────────
+  // 모델 목록·고정 커밋·전처리 규격은 models/manifest.json에 있습니다. 엔진은 js/paddle-ocr.js입니다.
   OCR_PROGRESS_STEP: 10,           // [구현 가정] 내려받기 진행률을 화면에 갱신하는 간격(퍼센트)
   OCR_LONG_SIDE: 1600,             // [구현 가정] OCR에 넘기는 사진의 긴 변
-  OCR_LINE_DROP_CONF: 40,          // [구현 가정] 이 신뢰도 미만 줄은 읽지 않고 "일부를 읽지 못했습니다"
-  OCR_LINE_UNSURE_CONF: 70,        // [구현 가정] 이 신뢰도 미만 줄은 "확실하지 않습니다만"을 앞에 붙임
-  // 숫자가 든 줄은 문턱을 따로 둡니다. 2026-11-16 측정(OCR_사전점검)에서 틀린 22건 중 16건이 신뢰도 70 이상이었고,
-  // "1.5L"을 "150"으로 읽은 줄이 신뢰도 85였습니다. 85로 두면 그 줄이 그대로 통과하므로 90으로 잡았습니다. 재측정으로 조정합니다
-  OCR_NUMBER_LINE_UNSURE_CONF: 90, // [구현 가정] 숫자가 든 줄은 이 신뢰도 미만이면 "확실하지 않습니다만"을 앞에 붙임
+  // 2026-11-16 6개 언어 252장 실측으로 정했습니다. 실제 글줄의 신뢰도는 전부 88 이상이었고,
+  // 글자가 없는 자리에 생긴 유령 글줄(".", "Q", "0")은 전부 42 이하였습니다. 그 사이가 비어 있어 60으로 잡았습니다.
+  // 이 값을 넣으면 타이어가 39/42 → 42/42가 되고 다른 언어에서 잃는 줄은 없었습니다(합계 96.0% → 97.2%).
+  OCR_LINE_DROP_CONF: 60,          // 이 신뢰도 미만 줄은 읽지 않고 "일부를 읽지 못했습니다"
+  // 아래 두 값은 **맞고 틀림을 가르지 못합니다.** 같은 측정에서 틀리게 읽은 줄도 신뢰도가 88~100이었습니다
+  // (예: "买一送一"을 "买送"으로 읽고 100). 신뢰도를 숫자 안전장치로 쓰지 마십시오.
+  // 숫자 안전장치의 본체는 (1) 숫자가 하나라도 있으면 무조건 붙는 확인 문구, (2) 두 프레임 숫자 대조입니다.
+  OCR_LINE_UNSURE_CONF: 60,        // 걸러낸 줄과 같은 기준. 이 값 때문에 "확실하지 않습니다만"이 붙는 일은 사실상 없습니다
+  OCR_NUMBER_LINE_UNSURE_CONF: 60, // 숫자 줄도 같습니다. 확인 문구는 신뢰도와 무관하게 무조건 붙습니다
   OCR_MIN_CHARS: 4,                // [구현 가정] 읽힌 글자가 이보다 적으면 문서가 아니라고 봄
   CONFIRM_WINDOW_MS: 10000,        // [구현 가정] "한 번 더 누르세요" 유효 시간
 

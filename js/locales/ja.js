@@ -4,7 +4,7 @@
  * Confidence vocabulary is fixed to three forms: 「…と書かれています。」 / 「…のように見えます。」 / 「わかりません。」
  */
 export default {
-  meta: { code: 'ja', htmlLang: 'ja', speechTag: 'ja-JP', ocr: 'jpn', name: '日本語' },
+  meta: { code: 'ja', htmlLang: 'ja', speechTag: 'ja-JP', name: '日本語' },
 
   ui: {
     title: '視覚サポート',
@@ -111,6 +111,7 @@ export default {
     unmuted: '音を出しました。',
     ocrPreparing: '文字の読み取りを準備しています。最初は時間がかかります。',
     ocrDownloading: (pct) => `文字の読み取り用データをダウンロードしています。${pct}パーセント。`,
+    ocrAskDownload: (mb) => `文字読み取りに約 ${mb} メガバイトのダウンロードが必要です。Wi-Fi を推奨します。もう一度押してください。`,
     ocrReady: '文字の読み取りの準備ができました。',
     ocrReading: '文字を読み取っています。そのまま少しお持ちください。',
     ocrNoText: '文字を読み取れませんでした。文書を少し離すか、明るい場所でもう一度写してください。',

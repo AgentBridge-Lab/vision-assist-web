@@ -6,7 +6,7 @@
  */
 
 export default {
-  meta: { code: 'en', htmlLang: 'en', speechTag: 'en-US', ocr: 'eng', name: 'English' },
+  meta: { code: 'en', htmlLang: 'en', speechTag: 'en-US', name: 'English' },
 
   ui: {
     title: 'Visual Assistant',
@@ -115,6 +115,7 @@ export default {
     unmuted: 'Sound is on.', // draft
     ocrPreparing: 'Getting text reading ready. The first time takes a while.', // draft
     ocrDownloading: (pct) => `Downloading text reading data. ${pct} percent.`, // draft
+    ocrAskDownload: (mb) => `Text reading needs about ${mb} megabytes. Wi-Fi is recommended. Press again to download.`,
     ocrReady: 'Text reading is ready.', // draft
     ocrReading: 'Reading the text. Please hold still for a moment.', // draft
     ocrNoText: 'Could not read any text. Move the document a little farther away, or point it again in a brighter place.', // draft

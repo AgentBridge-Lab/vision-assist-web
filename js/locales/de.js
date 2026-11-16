@@ -3,7 +3,7 @@
 
 // Fixed confidence vocabulary: "Dort steht: ..." (read text), "Es scheint ... zu sein" (inference), "nicht erkennen" (unknown).
 export default {
-  meta: { code: 'de', htmlLang: 'de', speechTag: 'de-DE', ocr: 'deu', name: 'Deutsch' },
+  meta: { code: 'de', htmlLang: 'de', speechTag: 'de-DE', name: 'Deutsch' },
 
   ui: {
     title: 'Sehassistent',
@@ -108,6 +108,7 @@ export default {
     unmuted: 'Ton an.',
     ocrPreparing: 'Die Texterkennung wird vorbereitet. Beim ersten Mal dauert das etwas.',
     ocrDownloading: (pct) => `Daten für die Texterkennung werden geladen. ${pct} Prozent.`,
+    ocrAskDownload: (mb) => `Die Texterkennung benötigt etwa ${mb} Megabyte. WLAN wird empfohlen. Drücken Sie erneut, um herunterzuladen.`,
     ocrReady: 'Die Texterkennung ist bereit.',
     ocrReading: 'Der Text wird gelesen. Halten Sie still.',
     ocrNoText: 'Es konnte kein Text gelesen werden. Halten Sie das Dokument etwas weiter weg oder an einen helleren Ort.',

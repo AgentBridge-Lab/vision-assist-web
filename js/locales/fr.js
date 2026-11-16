@@ -3,7 +3,7 @@
 // Fixed confidence vocabulary: "Il est ecrit" (quote), "Cela semble etre" (seems), "Impossible de dire" (unknown).
 
 export default {
-  meta: { code: 'fr', htmlLang: 'fr', speechTag: 'fr-FR', ocr: 'fra', name: 'Français' },
+  meta: { code: 'fr', htmlLang: 'fr', speechTag: 'fr-FR', name: 'Français' },
 
   ui: {
     title: 'Aide visuelle',
@@ -110,6 +110,7 @@ export default {
     unmuted: 'Son remis.',
     ocrPreparing: 'Préparation de la lecture du texte. La première fois, cela prend du temps.',
     ocrDownloading: (pct) => `Téléchargement des données de lecture du texte. ${pct} pour cent.`,
+    ocrAskDownload: (mb) => `La lecture de texte nécessite environ ${mb} mégaoctets. Le Wi-Fi est recommandé. Appuyez de nouveau pour télécharger.`,
     ocrReady: 'La lecture du texte est prête.',
     ocrReading: 'Lecture du texte en cours. Gardez le document immobile un instant.',
     ocrNoText: "Le texte n'a pas pu être lu. Éloignez un peu le document ou éclairez-le mieux, puis réessayez.",

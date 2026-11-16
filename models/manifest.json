@@ -1,0 +1,65 @@
+{
+  "_설명": "기기 내 OCR(PaddleOCR PP-OCRv5 mobile)에 쓰는 모델 목록. 2026-11-16 D-4 결정으로 채택했습니다.",
+  "_출처": "모델은 HuggingFace PaddlePaddle 공식 저장소(Apache-2.0). 글자 사전은 각 저장소의 inference.yml PostProcess.character_dict에서 뽑아 app/models/dict/*.txt로 고정했습니다(tools/extract_paddle_dict.py).",
+  "_주의1": "url은 반드시 commit을 박아 씁니다. main으로 받으면 저장소가 갱신될 때 모델과 사전이 어긋나 글자가 조용히 밀립니다.",
+  "_주의2": "사전 파일은 한 줄에 한 항목입니다. 줄을 trim()하지 마십시오. cjk 0번 항목이 U+3000(전각 공백)이고 JS trim()이 이 글자를 지워 18,383자 색인이 전부 한 칸 밀립니다.",
+  "runtime": {
+    "name": "onnxruntime-web",
+    "version": "1.20.1",
+    "dist": "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/",
+    "wasmFile": "ort-wasm-simd-threaded.wasm",
+    "numThreads": 1,
+    "_스레드": "GitHub Pages는 교차 출처 격리 머리말(COOP/COEP)을 못 붙이므로 SharedArrayBuffer가 없습니다. 측정값 180ms도 스레드 1개 기준입니다.",
+    "bodyBytes": 11716934,
+    "transferBytes": 3073076
+  },
+  "det": {
+    "repo": "PaddlePaddle/PP-OCRv5_mobile_det_onnx",
+    "commit": "e6f4fa85f00e168c862bc462aebca69eef9b3d3d",
+    "bytes": 4826518,
+    "resizeLong": 960,
+    "stride": 32,
+    "mean": [0.485, 0.456, 0.406],
+    "std": [0.229, 0.224, 0.225],
+    "thresh": 0.3,
+    "boxThresh": 0.6,
+    "unclipRatio": 1.5,
+    "minSize": 3
+  },
+  "rec": {
+    "_공통": "5개 모델 모두 inference.yml이 같습니다: CTCLabelDecode, img_mode BGR, image_shape [3,48,320]. use_space_char 항목은 어느 yml에도 없습니다.",
+    "height": 48,
+    "baseWidth": 320,
+    "imgMode": "BGR",
+    "mean": 0.5,
+    "std": 0.5,
+    "models": {
+      "korean": { "repo": "PaddlePaddle/korean_PP-OCRv5_mobile_rec_onnx", "commit": "5c6f574b8e2230adf4287b33e736d71b9fabd28e", "bytes": 13418787, "dict": "korean.txt", "dictChars": 11945 },
+      "cjk":    { "repo": "PaddlePaddle/PP-OCRv5_mobile_rec_onnx",        "commit": "ed152b8b495f84de93cda5709d768548a9127622", "bytes": 16534782, "dict": "cjk.txt",    "dictChars": 18383 },
+      "en":     { "repo": "PaddlePaddle/en_PP-OCRv5_mobile_rec_onnx",     "commit": "3fafbc3b5dcf93dd72add9f48368be8a3a2cd33b", "bytes": 7848423,  "dict": "en.txt",     "dictChars": 436 },
+      "latin":  { "repo": "PaddlePaddle/latin_PP-OCRv5_mobile_rec_onnx",  "commit": "89d3a50e2c27e2e7cceeab0e944c25c807d5db4f", "bytes": 8042023,  "dict": "latin.txt",  "dictChars": 836 },
+      "th":     { "repo": "PaddlePaddle/th_PP-OCRv5_mobile_rec_onnx",     "commit": "1d4adbbafb1034a2fd6618498575b81ea7b69f69", "bytes": 7891015,  "dict": "th.txt",     "dictChars": 524 }
+    }
+  },
+  "langMap": {
+    "ko": "korean",
+    "zh-CN": "cjk",
+    "ja": "cjk",
+    "en": "en",
+    "es": "latin",
+    "fr": "latin",
+    "de": "latin",
+    "th": "th"
+  },
+  "_내려받기량": {
+    "_설명": "transfer = 실제 통신량(압축된 채로 오가는 양, 사용자 데이터 요금 기준). body = 압축을 푼 크기(저장 공간 기준). 모델 파일은 압축되지 않아 둘이 같습니다(2026-11-16 확인).",
+    "ko":    { "transferBytes": 21365832, "bodyBytes": 30009690 },
+    "zh-CN": { "transferBytes": 24555358, "bodyBytes": 33152185 },
+    "ja":    { "transferBytes": 24555358, "bodyBytes": 33152185 },
+    "en":    { "transferBytes": 15749433, "bodyBytes": 24393291 },
+    "es":    { "transferBytes": 15944234, "bodyBytes": 24588092 },
+    "fr":    { "transferBytes": 15944234, "bodyBytes": 24588092 },
+    "de":    { "transferBytes": 15944234, "bodyBytes": 24588092 },
+    "th":    { "transferBytes": 15793792, "bodyBytes": 24437650 }
+  }
+}

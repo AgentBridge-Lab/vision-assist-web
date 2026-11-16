@@ -6,10 +6,7 @@
   <title>시각 보조</title>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/app.css">
-  <!-- 기기 내 OCR 엔진. 버전 고정(5.1.1) + 무결성 해시. 바꿀 때는 js/config.js의 OCR_* 주소도 함께 바꿉니다. -->
-  <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"
-          integrity="sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F"
-          crossorigin="anonymous"></script>
+  <!-- 기기 내 OCR 엔진(PaddleOCR)은 문서 읽기를 처음 고를 때만 받습니다. js/paddle-ocr.js가 그때 불러옵니다. -->
   <script type="module" src="js/main.js"></script>
 </head>
 <body>

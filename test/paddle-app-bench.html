@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8">
+<title>PaddleOCR 앱 모듈 시험</title>
+<!--
+  벤치 코드가 아니라 **실제 앱 모듈 js/paddle-ocr.js**를 불러 돌립니다.
+  목적 두 가지
+   1. 이식 정확성 — 한국어 원본 42장에서 벤치와 같은 수치가 나오는가
+   2. 언어별 정확도 — ?lang=ja 처럼 언어를 바꿔 가며 같은 조건에서 비교
+  쓰는 법: 서버가 /img/manifest.json, /img/ground_truth.json, /img/deg/<파일>을 내주면 됩니다.
+-->
+<body>
+<pre id="log">시작 대기…</pre>
+<script>
+// 모듈을 불러오다 실패하면 아래 모듈 스크립트는 아예 실행되지 않습니다. 그 경우도 알 수 있게 따로 받습니다
+(function () {
+  var qs = new URLSearchParams(location.search);
+  function report(what, detail) {
+    try {
+      navigator.sendBeacon('/result', new Blob([JSON.stringify({
+        tag: (qs.get('tag') || 'run') + '_ERROR', fatal: what, detail: String(detail),
+        log: (document.getElementById('log') || {}).textContent || ''
+      })], { type: 'application/json' }));
+    } catch (e) { /* 보고조차 못 하면 어쩔 수 없습니다 */ }
+  }
+  window.addEventListener('error', function (e) { report('error', (e.error && e.error.stack) || e.message); });
+  window.addEventListener('unhandledrejection', function (e) { report('rejection', (e.reason && e.reason.stack) || e.reason); });
+})();
+</script>
+<script type="module">
+import { PaddleOcr } from '../js/paddle-ocr.js';
+import { CONFIG } from '../js/config.js';
+
+const log = (s) => { document.getElementById('log').textContent += '\n' + s; };
+const qs = new URLSearchParams(location.search);
+const lang = qs.get('lang') || 'ko';
+const base = qs.get('base') || '/img';   // 이미지 세트의 뿌리. 서버가 이 아래로 manifest.json·ground_truth.json·deg/를 내줍니다
+
+/** 글자 오류율(CER) = 편집거리 / 정답 길이 — ocr-bench.html, paddle-bench.html과 같은 계산 */
+function cer(truth, got) {
+  const a = (truth || '').replace(/\s+/g, ''), b = (got || '').replace(/\s+/g, '');
+  const m = a.length, n = b.length;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return m === 0 ? (n === 0 ? 0 : 1) : d[m][n] / m;
+}
+
+async function toCanvas(url) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return c;
+}
+
+/** 글자가 없는 그림에 글자를 지어내지 않는지 */
+function blankCanvas(kind) {
+  const c = document.createElement('canvas'); c.width = 800; c.height = 300;
+  const ctx = c.getContext('2d');
+  if (kind === 'white') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, 800, 300); }
+  else {
+    const im = ctx.createImageData(800, 300);
+    for (let i = 0; i < im.data.length; i += 4) {
+      const v = (Math.random() * 256) | 0;
+      im.data[i] = im.data[i+1] = im.data[i+2] = v; im.data[i+3] = 255;
+    }
+    ctx.putImageData(im, 0, 0);
+  }
+  return c;
+}
+
+(async () => {
+  const manifest = await (await fetch(base + '/manifest.json')).json();
+  const truth = await (await fetch(base + '/ground_truth.json')).json();
+
+  const ocr = new PaddleOcr(CONFIG);
+  const plan = await ocr.plan(lang);
+  log(`언어 ${lang} · 모델군 ${plan.modelKey} · 통신량 약 ${plan.transferMB}MB · 이미 받아 둠 ${plan.cached}`);
+
+  const t0 = performance.now();
+  let lastPct = -1;
+  await ocr.prepare(lang, (p) => {
+    const pct = Math.floor((p.received / p.total) * 100 / 10) * 10;
+    if (pct !== lastPct) { lastPct = pct; log(`  받는 중 ${pct}% (${p.phase})`); }
+  });
+  const initMs = Math.round(performance.now() - t0);
+  log(`초기화 완료 ${initMs}ms · 글자표 ${ocr.chars.length}개 (빈칸1 + 사전 + 띄어쓰기1) · 계약 점검 통과`);
+
+  // 글자 없는 그림 두 장
+  const blanks = [];
+  for (const kind of ['white', 'noise']) {
+    const r = await ocr.read(blankCanvas(kind));
+    blanks.push({ kind, text: r.text, lines: r.lines.length, confidence: r.confidence });
+    log(`빈그림 ${kind}: 줄 ${r.lines.length}개 "${r.text.slice(0, 40)}" (0줄·빈 글자여야 함)`);
+  }
+
+  const rows = [];
+  for (const item of manifest) {
+    const canvas = await toCanvas(base + '/deg/' + item.file);
+    const t = performance.now();
+    let got = '', err = null, conf = null, lines = [];
+    try {
+      const r = await ocr.read(canvas);
+      got = r.text; conf = r.confidence;
+      lines = r.lines.map((l) => ({ t: l.text, c: l.confidence }));
+    } catch (e) { err = String((e && e.message) || e); }
+    const ms = Math.round(performance.now() - t);
+    const gt = truth[item.key];
+    const norm = (s) => (s || '').replace(/\s+/g, '');
+    rows.push({ key: item.key, deg: item.deg, ms, err, conf, lines, truth: gt, got: got.trim(),
+      exact: norm(got) === norm(gt), cer: Number(cer(gt, got).toFixed(3)) });
+    log(`${item.key}/${item.deg} conf=${conf} 줄=${lines.length} exact=${norm(got) === norm(gt)} cer=${cer(gt, got).toFixed(3)} ${ms}ms "${got.trim().slice(0, 36)}"${err ? ' ERROR ' + err : ''}`);
+  }
+  const ok = rows.filter((r) => !r.err);
+  const exact = rows.filter((r) => r.exact).length;
+  const avgCer = rows.reduce((s, r) => s + r.cer, 0) / rows.length;
+  const avgMs = Math.round(ok.reduce((s, r) => s + r.ms, 0) / Math.max(1, ok.length));
+  log(`\n요약(${lang}): 정확 일치 ${exact}/${rows.length} · 평균 CER ${avgCer.toFixed(3)} · 장당 평균 ${avgMs}ms · 오류 ${rows.length - ok.length}건`);
+
+  await fetch('/result', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ tag: qs.get('tag') || lang, engine: 'app js/paddle-ocr.js', lang, modelKey: plan.modelKey,
+      initMs, charsLen: ocr.chars.length, transferBytes: plan.transferBytes, blanks, rows }) });
+  log('완료. 결과 전송함.');
+  document.title = 'DONE';
+})().catch(async (e) => {
+  log('ERROR: ' + ((e && e.stack) || e));
+  document.title = 'ERROR';
+  try {
+    await fetch('/result', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tag: (qs.get('tag') || lang) + '_ERROR', fatal: 'caught',
+        detail: String((e && e.stack) || e), log: document.getElementById('log').textContent }) });
+  } catch { /* 보고조차 못 하면 어쩔 수 없습니다 */ }
+});
+</script>
+</body></html>

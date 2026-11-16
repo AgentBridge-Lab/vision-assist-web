@@ -1,7 +1,7 @@
 // @ts-check
 /** Simplified Chinese locale. Key set must match ko.js: `node test/check-locales.mjs` */
 export default {
-  meta: { code: 'zh-CN', htmlLang: 'zh-CN', speechTag: 'zh-CN', ocr: 'chi_sim', name: '中文' },
+  meta: { code: 'zh-CN', htmlLang: 'zh-CN', speechTag: 'zh-CN', name: '中文' },
 
   ui: {
     title: '视觉助手',
@@ -106,6 +106,7 @@ export default {
     unmuted: '已打开声音。',
     ocrPreparing: '正在准备读取文字,第一次需要一些时间。',
     ocrDownloading: (pct) => `正在下载文字识别数据,${pct}%。`,
+    ocrAskDownload: (mb) => `文字朗读需要下载约 ${mb} MB。建议使用 Wi-Fi。请再按一次开始下载。`,
     ocrReady: '文字识别已准备好。',
     ocrReading: '正在读取文字,请保持不动。',
     ocrNoText: '没有读到文字。请把文件拿远一点,或在更亮的地方重新拍。',

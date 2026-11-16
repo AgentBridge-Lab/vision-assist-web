@@ -8,15 +8,18 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// 로케일과 OCR 모델 지도가 어긋나면 그 언어는 문서 읽기를 못 씁니다. 같이 봅니다
+const OCR_LANGS = Object.keys(JSON.parse(fs.readFileSync(path.join(root, 'models/manifest.json'), 'utf8')).langMap);
+
 const EXPECT = {
-  ko: { htmlLang: 'ko', speechTag: 'ko-KR', ocr: 'kor', name: '한국어' },
-  'zh-CN': { htmlLang: 'zh-CN', speechTag: 'zh-CN', ocr: 'chi_sim', name: '中文' },
-  en: { htmlLang: 'en', speechTag: 'en-US', ocr: 'eng', name: 'English' },
-  es: { htmlLang: 'es', speechTag: 'es-ES', ocr: 'spa', name: 'Español' },
-  fr: { htmlLang: 'fr', speechTag: 'fr-FR', ocr: 'fra', name: 'Français' },
-  de: { htmlLang: 'de', speechTag: 'de-DE', ocr: 'deu', name: 'Deutsch' },
-  th: { htmlLang: 'th', speechTag: 'th-TH', ocr: 'tha', name: 'ไทย' },
-  ja: { htmlLang: 'ja', speechTag: 'ja-JP', ocr: 'jpn', name: '日本語' },
+  ko: { htmlLang: 'ko', speechTag: 'ko-KR', name: '한국어' },
+  'zh-CN': { htmlLang: 'zh-CN', speechTag: 'zh-CN', name: '中文' },
+  en: { htmlLang: 'en', speechTag: 'en-US', name: 'English' },
+  es: { htmlLang: 'es', speechTag: 'es-ES', name: 'Español' },
+  fr: { htmlLang: 'fr', speechTag: 'fr-FR', name: 'Français' },
+  de: { htmlLang: 'de', speechTag: 'de-DE', name: 'Deutsch' },
+  th: { htmlLang: 'th', speechTag: 'th-TH', name: 'ไทย' },
+  ja: { htmlLang: 'ja', speechTag: 'ja-JP', name: '日本語' },
 };
 const only = process.argv.includes('--only') ? process.argv[process.argv.indexOf('--only') + 1] : null;
 const codes = only ? ['ko', only].filter((c, i, a) => a.indexOf(c) === i) : Object.keys(EXPECT);
@@ -120,6 +123,8 @@ for (const code of codes) {
   if (!rc.includes('AAA') || !rc.includes('BBB')) bad(`${code}: fmt.recheckChanged가 두 결론을 담지 않음`);
   if (L.rule.recheckSame(1) === L.rule.recheckSame(2)) bad(`${code}: rule.recheckSame이 횟수를 담지 않음`);
   if (!L.status.ocrDownloading(40).includes('40')) bad(`${code}: status.ocrDownloading이 진행률을 담지 않음`);
+  if (!L.status.ocrAskDownload(21).includes('21')) bad(`${code}: status.ocrAskDownload이 크기를 담지 않음`);
+  if (!OCR_LANGS.includes(code)) bad(`${code}: models/manifest.json의 langMap에 없습니다 — 이 언어는 문서 읽기를 못 씁니다`);
 
   // 담당 밖 질문 가려내기: 위에서부터 차례로 맞춤(js/phrases.js의 classifyQuestion과 같은 순서)
   const classify = (q) => Object.keys(L.question).find((k) => L.question[k].test(q)) || null;

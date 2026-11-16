@@ -157,12 +157,15 @@ export function composeDescription(r, opt) {
   else if (r.high_risk === 'medical_value') lines.push({ label: T.labels.confirm, text: T.rule.medicalValueClosing });
   else if (r.high_risk === 'important_doc') lines.push({ label: T.labels.confirm, text: T.rule.importantClosing });
   // 그 밖에도 읽어 준 글자에 숫자가 있으면 확인 문구를 붙입니다(용량·주소 같은 일반 숫자도 확신하며 틀리는 것이 측정됨)
-  else if (wantRead && read.some((t) => /\d/.test(t))) lines.push({ label: T.labels.confirm, text: T.rule.numberClosing });
+  // \p{Nd}로 보는 이유: 자바스크립트의 \d는 0-9만입니다. 타이 숫자 ๐-๙가 빠져 타이어 문서에서 확인 문구가
+  // 붙지 않았습니다(2026-11-16 검토에서 잡음). 전각 숫자는 normalizeWidth가 이미 반각으로 바꿉니다.
+  // 한자 숫자(一二三)는 일부러 넣지 않았습니다 — "一"이 보통 낱말에도 흔해 확인 문구가 남발됩니다. 결정사항으로 남겨 둡니다
+  else if (wantRead && read.some((t) => /\p{Nd}/u.test(t))) lines.push({ label: T.labels.confirm, text: T.rule.numberClosing });
 
   return finish(lines, unknown ? '' : subject);
 }
 
-const NUM_RE = /\d[\d,.\/:~\-]*\d|\d/g;
+const NUM_RE = /\p{Nd}[\p{Nd},.\/:~\-]*\p{Nd}|\p{Nd}/gu;
 /** 글자에서 숫자 표기를 뽑습니다(표기 그대로). */
 export function numberTokens(text) {
   return String(text || '').match(NUM_RE) || [];

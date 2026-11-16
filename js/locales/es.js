@@ -5,7 +5,7 @@
  * Fixed confidence vocabulary: "Dice ..." (text read), "Parece ser ..." (inference), "No puedo saberlo." (unknown).
  */
 export default {
-  meta: { code: 'es', htmlLang: 'es', speechTag: 'es-ES', ocr: 'spa', name: 'Español' },
+  meta: { code: 'es', htmlLang: 'es', speechTag: 'es-ES', name: 'Español' },
 
   ui: {
     title: 'Asistente visual',
@@ -112,6 +112,7 @@ export default {
     unmuted: 'Sonido activado.',
     ocrPreparing: 'Preparando la lectura de texto. La primera vez tarda un poco.',
     ocrDownloading: (pct) => `Descargando datos para leer texto. ${pct} por ciento.`,
+    ocrAskDownload: (mb) => `La lectura de texto necesita unos ${mb} megabytes. Se recomienda Wi-Fi. Pulse de nuevo para descargar.`,
     ocrReady: 'La lectura de texto está lista.',
     ocrReading: 'Leyendo el texto. Mantenga el documento quieto un momento.',
     ocrNoText: 'No he podido leer el texto. Aleje un poco el documento o vuelva a enfocarlo con más luz.',

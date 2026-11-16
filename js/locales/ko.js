@@ -21,7 +21,7 @@ function ro(word) {
 }
 
 export default {
-  meta: { code: 'ko', htmlLang: 'ko', speechTag: 'ko-KR', ocr: 'kor', name: '한국어' },
+  meta: { code: 'ko', htmlLang: 'ko', speechTag: 'ko-KR', name: '한국어' },
 
   ui: {
     title: '시각 보조',
@@ -130,6 +130,7 @@ export default {
     unmuted: '소리를 켰습니다.', // [구현 초안]
     ocrPreparing: '글자 읽기를 준비하는 중입니다. 처음에는 시간이 걸립니다.', // [구현 초안]
     ocrDownloading: (pct) => `글자 읽기 자료를 받는 중입니다. ${pct}퍼센트.`, // [구현 초안]
+    ocrAskDownload: (mb) => `글자 읽기 자료 약 ${mb}메가바이트를 받아야 합니다. 와이파이를 권합니다. 받으려면 한 번 더 눌러 주세요.`,
     ocrReady: '글자 읽기 준비가 끝났습니다.', // [구현 초안]
     ocrReading: '글자를 읽는 중입니다. 잠깐 그대로 들고 계세요.', // [구현 초안]
     ocrNoText: '글자를 읽지 못했습니다. 문서를 조금 멀리 하거나 밝은 곳에서 다시 비춰 주세요.', // [구현 초안]

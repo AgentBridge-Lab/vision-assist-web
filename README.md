@@ -48,7 +48,7 @@ python3 -m http.server 8931 --bind 127.0.0.1
 
 - 이유: TypeScript 컴파일러를 쓰려면 `npm install`이 필요하고, 의존성 설치는 사용자 승인 사항입니다. 승인 전에도 브라우저에서 바로 열어 검증할 수 있어야 했습니다.
 - 타입은 JSDoc 주석(`@typedef`, `@param`)으로 적었고 파일마다 `// @ts-check`를 달았습니다. 나중에 `.ts`로 옮길 때 주석을 타입 선언으로 바꾸면 됩니다.
-- 프레임워크·빌드 도구·npm 패키지는 쓰지 않았습니다. 외부 의존은 CDN `<script>` 하나입니다: Tesseract.js **5.1.1**(무결성 해시 포함), 엔진 tesseract.js-core **5.1.1**, 한국어 데이터 @tesseract.js-data/kor **1.0.0**(4.0.0_best_int, 압축 약 1.6MB). 주소는 `index.html`과 `js/config.js`의 `OCR_*`에 고정했습니다.
+- 프레임워크·빌드 도구·npm 패키지는 쓰지 않았습니다. 외부 의존은 문서 읽기를 처음 고를 때 그때 받는 것뿐입니다: onnxruntime-web **1.20.1**(CDN)과 PaddleOCR PP-OCRv5 모델(HuggingFace, **커밋 고정**). 어떤 저장소의 어느 커밋인지는 `models/manifest.json`에 있습니다. 글자 사전은 저장소에 함께 둡니다(`models/dict/*.txt`).
 
 ## 언어 8개
 
@@ -91,7 +91,8 @@ js/phrases.js         문장 규칙(4-5절, 4-6절). 글귀는 로케일에서 �
 js/gates.js           5중 게이트(2-2절). DOM을 쓰지 않아 Node에서 시험 가능
 js/camera.js          getUserMedia, 프레임 추출, 생존 판정
 js/speech.js          음성 합성, 발화 대기열 1건, 조작 중 보류, 효과음
-js/ocr.js             Tesseract.js 래퍼
+js/paddle-ocr.js      PaddleOCR 엔진(검출→기울기보정→인식→CTC) + 모델 내려받기·보관
+js/ocr.js             OCR 결과 글자 손질(전각→반각)
 js/api.js             프록시 호출, 오류 분류(발생 지점 기준)
 js/main.js            화면 전환, 모드 실행
 worker/worker.js      Cloudflare Workers 프록시(목 기본, 한도 집행)
@@ -195,7 +196,9 @@ new_sqlite_classes = ["LimitCounter"]
 - **기울기 보정(사용성 개선 후보)**: 15° 기울면 평균 신뢰도 38로 버림 문턱 아래라 "읽지 못했습니다"로 끝납니다. 안전하게 실패하므로 손대지 않았습니다. 기울기 안내나 보정은 나중의 사용성 개선 후보입니다.
 
 - **기기 음성 목록이 비어 있는 브라우저**: 음성 유무를 `getVoices()`로 판정하므로, 목록을 늦게 주거나 아예 주지 않는 브라우저에서는 음성이 있어도 글자·화면읽기 방식으로 떨어집니다. 다른 언어 음성으로 읽히는 것보다 낫다고 보았으나 실기기 확인이 필요합니다.
-- **OCR 자료 저장 방식**: Tesseract.js 5.1.1이 내려받기 주소를 하나만 받아서, 언어 자료를 직접 받아 Tesseract.js의 저장소(IndexedDB `keyval-store`)에 넣어 줍니다. 5.1.1 내부 규칙에 기댄 것이라 버전을 올릴 때 다시 확인해야 합니다. 저장소를 쓸 수 없는 브라우저에서는 고른 언어만 받고 영문 혼용 인식이 빠집니다.
+- **OCR 모델 저장 방식**: Cache API(`vision-ocr-v1`)에 넣습니다. 쓸 수 없는 브라우저에서도 동작은 하지만 열 때마다 다시 받습니다.
+- **모델 주소에 커밋을 박는 이유**: 글자 사전은 저장소에 고정돼 있는데 모델만 `main`으로 받으면, 저장소가 갱신되는 순간 둘이 어긋나 **오류 없이** 엉뚱한 글자가 나옵니다. 마지막 그물로 초기화 때 인식기 출력 클래스 수가 글자표 길이와 같은지 확인합니다.
+- **사전 파일의 줄을 손대면 안 됩니다**: `cjk.txt`의 0번 항목이 U+3000(전각 공백)이고 자바스크립트 `trim()`이 이 글자를 지웁니다. 지우면 18,383자 색인이 한 칸씩 밀립니다.
 - **봇 차단(Turnstile)**: 화면읽기 통과 여부가 V6에서 정해지기 전이라 넣지 않았습니다. 지금 방어선은 한도와 월 예산뿐입니다.
 - **오프라인 문서 읽기**: OCR 엔진을 CDN에서 받으므로 서비스 워커 없이는 비행기 모드 동작(3단계 PASS 기준)을 보장하지 못합니다.
 - **영상 시각은 흐르는데 화면만 검은 경우의 카메라 재연결**(1-5절 마지막 행): 지금은 "어둡습니다" 안내로 떨어집니다. V2 실기기 결과가 필요합니다.
@@ -215,4 +218,4 @@ new_sqlite_classes = ["LimitCounter"]
 
 ## 라이선스
 
-MIT. GOV.UK Frontend(MIT) 고지와 Tesseract.js(Apache-2.0) 안내는 `LICENSE`에 있습니다. Pretendard는 라이선스 원문 확인 전이라 넣지 않았고 시스템 폰트만 씁니다.
+MIT. GOV.UK Frontend(MIT), PaddleOCR 모델·사전(Apache-2.0), ONNX Runtime Web(MIT) 고지는 `LICENSE`에 있습니다. Pretendard는 라이선스 원문 확인 전이라 넣지 않았고 시스템 폰트만 씁니다.

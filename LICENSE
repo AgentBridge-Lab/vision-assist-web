@@ -52,8 +52,23 @@ SOFTWARE.
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE.
 
-2. Tesseract.js (naptha/tesseract.js) — Apache License 2.0
+2. PaddleOCR PP-OCRv5 모델 (PaddlePaddle) — Apache License 2.0
+
+   모델 파일(inference.onnx)은 이 저장소에 포함하지 않았습니다. 문서 읽기를 처음
+   고를 때 HuggingFace의 PaddlePaddle 공식 저장소에서 커밋을 박아 내려받습니다.
+   쓰는 저장소는 models/manifest.json에 적혀 있습니다(검출기 1개 + 인식기 5개).
+
+   **다만 글자 사전 app/models/dict/*.txt 다섯 개는 이 저장소에 포함돼 있습니다.**
+   각 모델 저장소의 inference.yml에 있는 PostProcess.character_dict를 그대로 옮긴
+   것으로, Apache License 2.0이 적용되는 저작물의 재배포에 해당합니다.
+   추출 방법은 tools/extract_paddle_dict.py에 있습니다.
+   라이선스: https://www.apache.org/licenses/LICENSE-2.0
+
+3. ONNX Runtime Web (microsoft/onnxruntime) — MIT License
 
    이 저장소에 포함하지 않았습니다. 실행할 때 CDN(cdn.jsdelivr.net)에서
-   tesseract.js 5.1.1, tesseract.js-core 5.1.1, @tesseract.js-data/kor 1.0.0을
-   불러옵니다. 라이선스: https://www.apache.org/licenses/LICENSE-2.0
+   onnxruntime-web 1.20.1을 불러옵니다.
+   라이선스: https://github.com/microsoft/onnxruntime/blob/main/LICENSE
+
+   (2026-11-16 결정사항 D-4 이전에는 Tesseract.js(Apache-2.0)를 썼습니다. 지금은
+   쓰지 않습니다.)

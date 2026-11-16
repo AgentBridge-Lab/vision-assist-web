@@ -8,7 +8,7 @@ import * as P from './phrases.js';
 import { Camera, CameraError } from './camera.js';
 import { GateKeeper, analyzeFrame } from './gates.js';
 import { Speech } from './speech.js';
-import { Ocr } from './ocr.js';
+import { PaddleOcr } from './paddle-ocr.js';
 import { describe, ApiError, newId, cloudAvailable, DEMO } from './api.js';
 import { LANGUAGES, matchLanguage, loadLocale } from './i18n.js';
 
@@ -25,7 +25,7 @@ const deviceId = store.get('deviceId', '') || newId();
 
 const speech = new Speech(CONFIG, store);
 const camera = new Camera($('preview'), CONFIG);
-const ocr = new Ocr(CONFIG);
+const ocr = new PaddleOcr(CONFIG);
 
 /** @typedef {'object'|'scene'|'doc'} Mode */
 const S = {
@@ -603,11 +603,33 @@ function resetDoc() {
   doc.confirm = { kind: '', until: 0 };
 }
 
+/**
+ * 내려받기 동의가 유효한 시각. doc 상태와 떨어뜨려 둡니다 — resetDoc()이 지우면 동의가 성립하지 않습니다.
+ * 모드를 벗어났다 돌아와도 10초 안이면 두 번째 누름으로 인정합니다.
+ */
+let ocrConsentUntil = 0;
+
 /** 고른 언어의 OCR 자료를 그때 받습니다. 받는 동안 진행 상태를 말과 글자로 알립니다 */
 async function prepareOcr() {
-  const lang = P.T.meta.ocr;
+  const lang = P.T.meta.code;
   if (ocr.isReady(lang)) return;
   const runId = S.runId;
+  // 처음 받는 경우에는 통신량이 큽니다(언어에 따라 약 16~24MB). 크기를 알리고 한 번 더 누를 때만 받습니다.
+  // 이미 받아 둔 언어는 묻지 않고 바로 지나갑니다.
+  let plan = null;
+  try { plan = await ocr.plan(lang); } catch { plan = null; }
+  if (runId !== S.runId || S.mode !== 'doc') return;
+  if (plan && !plan.cached) {
+    const now = performance.now();
+    // 동의 상태를 doc에 두면 안 됩니다. 모드에 들어올 때마다 resetDoc()이 doc.confirm을 지우므로
+    // 두 번째 누름이 영영 인식되지 않고 내려받기가 시작되지 않습니다(2026-11-16 검토에서 잡음)
+    if (now > ocrConsentUntil) {
+      ocrConsentUntil = now + CONFIG.CONFIRM_WINDOW_MS;
+      setStatus(P.T.status.ocrAskDownload(plan.transferMB), { say: 'now', priority: 3 });
+      return;
+    }
+    ocrConsentUntil = 0;
+  }
   let shown = -1, started = false;
   try {
     await ocr.init(lang, (pct) => {
@@ -629,13 +651,15 @@ async function prepareOcr() {
 async function runOcr() {
   const gate = S.gate;
   if (!gate || doc.busy || doc.fixed || doc.failed || !S.obs) return;
+  // 아직 받지 않았으면 여기서 받지 않습니다. 내려받기는 동의를 받은 prepareOcr()에서만 시작합니다
+  if (!ocr.isReady(P.T.meta.code)) return;
   const first = camera.grabCanvas(CONFIG.OCR_LONG_SIDE);
   if (!first) return;
   const runId = S.runId;
   doc.busy = true;
   gate.markLocal(S.obs.hash, performance.now()); // 기기 내 처리: 호출 수에 넣지 않음
   speech.earcon('capture');
-  const lang = P.T.meta.ocr;
+  const lang = P.T.meta.code;
   if (ocr.isReady(lang)) setStatus(P.T.status.ocrReading); // 자료를 받는 중이면 진행률 안내가 이미 나가고 있습니다
   speech.startWaiting();
   try {
