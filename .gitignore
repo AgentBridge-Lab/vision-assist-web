@@ -3,3 +3,7 @@ node_modules/
 *.log
 .vercel/
 .omc/
+
+# wrangler
+.wrangler/
+.dev.vars
