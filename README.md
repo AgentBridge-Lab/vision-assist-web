@@ -116,7 +116,7 @@ curl http://localhost:8787/health                          # {"ok":true,"backend
 
 그다음 `PROXY_URL`에 그 주소를 넣습니다.
 
-- 한도(2-4절): 세션 40, 기기 일일 100, IP 일일 600, 월 예산 30달러(80%에서 기기 한도 40으로 축소, 100%에서 정지), 이미지 400KB. 일일 기준은 한국 시간 자정입니다. Cloudflare 무료 등급의 자체 한도는 UTC 자정에 초기화되므로 두 기준이 9시간 어긋납니다.
+- 한도(2-4절): 세션 40, 기기 일일 100, IP 일일 600, 월 예산 5달러(80%에서 기기 한도 40으로 축소, 100%에서 정지), 이미지 400KB. 일일 기준은 한국 시간 자정입니다. Cloudflare 무료 등급의 자체 한도는 UTC 자정에 초기화되므로 두 기준이 9시간 어긋납니다.
 - 한도 계수 저장: `LIMITS` 바인딩(Durable Object, 클래스 `LimitCounter`)이 있으면 거기에, 없으면 메모리에 셉니다. **메모리 계수는 프로세스가 다시 뜨면 사라지므로 배포용이 아닙니다.**
 - 실제 모델 호출은 `USE_OPENAI="1"`과 `OPENAI_API_KEY` 시크릿이 **둘 다** 있을 때만 켜집니다. 키는 코드에 없습니다.
 - 배포할 때는 `ALLOWED_ORIGIN`을 프런트 주소로 좁히십시오. 기본값은 `*`입니다.
@@ -130,7 +130,7 @@ main = "worker/worker.js"
 compatibility_date = "2026-11-01"
 [vars]
 ALLOWED_ORIGIN = "https://프런트-주소"
-MONTHLY_BUDGET_USD = "30"
+MONTHLY_BUDGET_USD = "5"
 [[durable_objects.bindings]]
 name = "LIMITS"
 class_name = "LimitCounter"
@@ -179,7 +179,7 @@ new_sqlite_classes = ["LimitCounter"]
 | HTTPS 배포(프런트, iOS 판정 페이지) | 휴대전화 실기기 시험 전부 |
 | Cloudflare 배포(`wrangler` 설치 = npm 설치) | 프록시 실제 운영, Durable Object 동작 확인 |
 | OpenAI API 키 발급·등록 | 실제 설명 품질, 응답 형식, 비용(V4, V5) |
-| D-1 월 예산 금액 | 지금은 권고값 30달러를 `[가정]`으로 넣어 두었습니다 |
+| D-1 월 예산 금액 | **5달러로 결정(2026-11-16).** 당사자 시험 단계용이며, 공개를 넓힐 때 재검토합니다 |
 | 글자 크기 기본값(위 표 첫 행) | 저시력 사용자 기본 화면 |
 | TypeScript 전환 여부 | 전환하려면 npm 설치 필요 |
 

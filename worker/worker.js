@@ -40,7 +40,7 @@ const DEFAULTS = Object.freeze({
   DEVICE_DAILY_LIMIT: 100,         // [가정] 기기당 일일 호출
   DEVICE_DAILY_LIMIT_REDUCED: 40,  // 월 예산 80% 도달 시
   IP_DAILY_LIMIT: 600,             // [가정] 같은 IP 일일 호출
-  MONTHLY_BUDGET_USD: 30,          // [가정] D-1 미결정. 기획서 권고값(공개 초기 30달러)
+  MONTHLY_BUDGET_USD: 5,           // D-1 결정(2026-11-16): 당사자 시험 단계는 5달러에서 시작
   BUDGET_REDUCE_RATIO: 0.8,
   MAX_IMAGE_BYTES: 400 * 1024,     // [가정] 이미지 1장 400KB 이하
   MAX_BODY_BYTES: 600 * 1024,      // base64로 부푼 400KB + 글자
