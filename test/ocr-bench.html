@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8">
+<title>OCR bench</title>
+<!-- 앱이 쓰는 것과 같은 Tesseract.js 번들 -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<body>
+<pre id="log">시작 대기…</pre>
+<script type="module">
+import { CONFIG } from '../js/config.js';
+import { Ocr } from '../js/ocr.js';
+
+const log = (s) => { document.getElementById('log').textContent += '\n' + s; };
+
+/** 글자 오류율(CER) = 편집거리 / 정답 길이 */
+function cer(truth, got) {
+  const a = truth.replace(/\s+/g, ''), b = (got || '').replace(/\s+/g, '');
+  const m = a.length, n = b.length;
+  const d = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return m === 0 ? (n === 0 ? 0 : 1) : d[m][n] / m;
+}
+
+async function toCanvas(url) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  c.getContext('2d').drawImage(img, 0, 0);
+  return c;
+}
+
+(async () => {
+  const manifest = await (await fetch('/img/manifest.json')).json();
+  const truth = await (await fetch('/img/ground_truth.json')).json();
+  const ocr = new Ocr(CONFIG);
+  if (!ocr.available) { log('FAIL: Tesseract 번들 없음'); return; }
+
+  log('언어 자료 내려받는 중…');
+  const t0 = performance.now();
+  await ocr.init('kor', (p) => { if (p && p.percent % 25 === 0) log(`  내려받기 ${p.percent}%`); });
+  const initMs = Math.round(performance.now() - t0);
+  log(`초기화 완료 ${initMs}ms`);
+
+  const rows = [];
+  for (const item of manifest) {
+    const canvas = await toCanvas('/img/deg/' + item.file);
+    const t = performance.now();
+    let got = '', err = null, conf = null, lines = [];
+    try {
+      const r = await ocr.recognize(canvas, 'kor');
+      got = (r && r.text) || '';
+      conf = r && r.confidence;
+      lines = ((r && r.lines) || []).map(l => ({ t: l.text, c: Math.round(l.confidence) }));
+    } catch (e) { err = String(e && e.message || e); }
+    const ms = Math.round(performance.now() - t);
+    const gt = truth[item.key];
+    const norm = (s) => (s || '').replace(/\s+/g, '');
+    rows.push({ key: item.key, deg: item.deg, ms, err, conf: conf === null ? null : Math.round(conf), lines,
+      truth: gt, got: got.trim(),
+      exact: norm(got) === norm(gt),
+      cer: Number(cer(gt, got).toFixed(3)) });
+    log(`${item.key}/${item.deg} conf=${conf===null?'-':Math.round(conf)} exact=${norm(got) === norm(gt)} cer=${cer(gt, got).toFixed(3)} "${got.trim().slice(0,36)}"`);
+  }
+  await fetch('/result', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ initMs, rows }) });
+  log('\n완료. 결과 전송함.');
+  document.title = 'DONE';
+})().catch((e) => { log('ERROR: ' + (e && e.stack || e)); document.title = 'ERROR'; });
+</script>

@@ -77,6 +77,7 @@ export default {
     demoStart: '这是测试。接下来的说明是事先写好的示例,与摄像头拍到的内容无关。',
     noVoice: '这台设备没有中文语音,将用屏幕上的文字代替声音告诉您。',
     frameWait: '请让摄像头稳定一会儿。',
+    steadyHint: "画面仍在晃动。请把手机放在桌上，或靠在墙上试试。",
     analyzing: '正在确认。',
     slow: '回应较慢,再等一会儿。',
     noChange: '画面没有变化,正在等待。',
@@ -170,6 +171,7 @@ export default {
     recheckSame: (n) => `再看一次,结果相同。已再确认${n}次。`,
     docPartial: '有一部分文字没读出来。',
     docNumberOnce: '数字只读了一次,没能核对。',
+    numberClosing: '数字和单位可能读错。请用其他方法再确认一次数字。',
     demoNotice: '这是测试示例,与实际物品无关。',
   },
 

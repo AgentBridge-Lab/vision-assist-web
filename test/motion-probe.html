@@ -1,0 +1,45 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>motion probe</title>
+<body><pre id="log">측정 준비…</pre>
+<script type="module">
+import { CONFIG } from '../js/config.js';
+import { frameDiff, analyzeFrame } from '../js/gates.js';
+const log = (s)=>{document.getElementById('log').textContent += '\n'+s;};
+const qs = new URLSearchParams(location.search);
+const CLIP = qs.get('clip')||'tremor.mp4';
+const N = Number(qs.get('n')||40);
+const S = CONFIG.SAMPLE_SIZE;
+
+const v = document.createElement('video');
+v.src = '/clip/'+CLIP; v.muted=true; v.loop=true; v.playsInline=true;
+document.body.appendChild(v); v.style.width='320px';
+const c = document.createElement('canvas'); c.width=S; c.height=S;
+const ctx = c.getContext('2d', {willReadFrequently:true});
+const gray = () => {
+  ctx.drawImage(v,0,0,S,S);
+  const d = ctx.getImageData(0,0,S,S).data;
+  const g = new Uint8ClampedArray(S*S);
+  for (let i=0,j=0;i<d.length;i+=4,j++) g[j]=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0;
+  return g;
+};
+await v.play().catch(()=>{});
+await new Promise(r=>v.readyState>=2?r():v.addEventListener('loadeddata',r,{once:true}));
+log(`영상 ${CLIP}  관찰간격 ${CONFIG.OBSERVE_INTERVAL_MS}ms  기준 MOTION_DIFF_MAX=${CONFIG.MOTION_DIFF_MAX}`);
+let prev = gray(), diffs = [], brights = [], sharps = [];
+for (let i=0;i<N;i++){
+  await new Promise(r=>setTimeout(r, CONFIG.OBSERVE_INTERVAL_MS));
+  const g = gray();
+  const d = frameDiff(g, prev); prev = g;
+  const m = analyzeFrame(g, S);
+  diffs.push(d); brights.push(m.brightness); sharps.push(m.sharpness);
+}
+const stat=(a)=>{const s=[...a].sort((x,y)=>x-y);return{min:s[0],p50:s[(s.length/2)|0],p90:s[(s.length*0.9)|0],max:s[s.length-1],mean:a.reduce((p,q)=>p+q,0)/a.length};};
+const ds=stat(diffs), bs=stat(brights), ss=stat(sharps);
+const pass = diffs.filter(d=>d<=CONFIG.MOTION_DIFF_MAX).length;
+log(`\n움직임(MAD)  최소 ${ds.min.toFixed(1)}  중앙 ${ds.p50.toFixed(1)}  평균 ${ds.mean.toFixed(1)}  90% ${ds.p90.toFixed(1)}  최대 ${ds.max.toFixed(1)}`);
+log(`밝기        중앙 ${bs.p50.toFixed(0)} (하한 ${CONFIG.QUALITY_MIN_BRIGHTNESS})`);
+log(`선명도      중앙 ${ss.p50.toFixed(1)} (하한 ${CONFIG.QUALITY_MIN_SHARPNESS})`);
+log(`\n"멈춤" 판정 통과: ${pass}/${N}회 (${(pass/N*100).toFixed(0)}%)`);
+await fetch('/probe', {method:'POST', headers:{'content-type':'application/json'},
+  body: JSON.stringify({clip:CLIP, diffs, bright:bs.p50, sharp:ss.p50, pass, n:N})});
+document.title='DONE';
+</script>

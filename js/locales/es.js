@@ -83,6 +83,7 @@ export default {
     demoStart: 'Modo de prueba. Las descripciones que oirá a partir de ahora son ejemplos escritos de antemano y no tienen relación con lo que ve la cámara.',
     noVoice: 'Este dispositivo no tiene voz en español, así que le mostraré la información como texto en pantalla.',
     frameWait: 'Mantenga la cámara quieta un momento.',
+    steadyHint: "La imagen todavía se mueve. Pruebe a apoyar el teléfono en una mesa o contra una pared.",
     analyzing: 'Comprobando.',
     slow: 'La respuesta tarda. Espero un poco más.',
     noChange: 'No hay cambios. Sigo esperando.',
@@ -177,6 +178,7 @@ export default {
     recheckSame: (n) => `Al mirar de nuevo sigue pareciendo lo mismo. Lo he comprobado ${n} veces.`,
     docPartial: 'Hay parte del texto que no he podido leer.',
     docNumberOnce: 'He leído el número una sola vez y no he podido confirmarlo.',
+    numberClosing: 'Los números y las unidades pueden leerse mal. Compruebe los números de nuevo por otro medio.',
     demoNotice: 'Es un ejemplo de prueba. No tiene relación con el objeto real.',
   },
 

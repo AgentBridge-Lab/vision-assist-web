@@ -52,7 +52,8 @@ const S = {
   netDown: false,
   retried: { service: false, format: false, network: false },
   // 안내를 한 번만 하기 위한 표시
-  noticed: { frameWait: false, noChange: false, moving: false, wakeLock: false, remainingDay: '' },
+  noticed: { frameWait: false, steadyHint: false, noChange: false, moving: false, wakeLock: false, remainingDay: '' },
+  unstableSince: 0,         // 멈춤 판정을 못 받기 시작한 시각(0이면 멈춰 있음)
   lastSendAt: 0,
   quality: { badSince: 0, kind: '', lastNoticeAt: -Infinity, streak: 0 },
   /** @type {any} */ wakeLock: null,
@@ -272,7 +273,8 @@ function beginRunning() {
   S.phase = 'running';
   S.lastInteractionAt = S.startedAt = performance.now();
   S.lastSendAt = S.startedAt;
-  S.noticed.frameWait = S.noticed.noChange = S.noticed.moving = false;
+  S.noticed.frameWait = S.noticed.steadyHint = S.noticed.noChange = S.noticed.moving = false;
+  S.unstableSince = 0;
   S.quality = { badSince: 0, kind: '', lastNoticeAt: -Infinity, streak: 0 };
   S.retried = { service: false, format: false, network: false };
   if (S.gate) S.gate.resetMotion();
@@ -377,7 +379,15 @@ function tick() {
 
   if (obs.stable) {
     S.noticed.moving = false;
+    S.noticed.steadyHint = false;
+    S.unstableSince = 0;
   } else {
+    // 멈춤 판정을 오래 못 받으면 같은 말을 되풀이하지 않고 다른 방법(올려놓기·기대기)을 한 번 알려 줍니다
+    if (!S.unstableSince) S.unstableSince = now;
+    if (!S.noticed.steadyHint && now - S.unstableSince >= CONFIG.FRAME_UNSTABLE_HINT_MS) {
+      S.noticed.steadyHint = true;
+      setStatus(P.T.status.steadyHint);
+    }
     // 프레임 대기: 시작 후 5초간 안정 프레임이 없을 때 1회
     if (!S.noticed.frameWait && S.lastSendAt === S.startedAt && now - S.startedAt > CONFIG.FRAME_WAIT_NOTICE_MS) {
       S.noticed.frameWait = true;

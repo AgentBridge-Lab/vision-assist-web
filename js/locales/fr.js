@@ -81,6 +81,7 @@ export default {
     demoStart: "Mode test. Les descriptions qui suivent sont des exemples écrits à l'avance, sans rapport avec ce que voit la caméra.",
     noVoice: "Cet appareil n'a pas de voix française. Les informations s'affichent en texte à l'écran.",
     frameWait: 'Immobilisez un instant la caméra.',
+    steadyHint: "L'image bouge encore. Essayez de poser le téléphone sur une table ou de l'appuyer contre un mur.",
     analyzing: 'Vérification en cours.',
     slow: 'La réponse tarde. Patientez un peu.',
     noChange: 'Aucun changement, en attente.',
@@ -174,6 +175,7 @@ export default {
     recheckSame: (n) => `Après une nouvelle vérification, cela se présente de la même façon. Vérifié ${n} fois.`,
     docPartial: "Une partie du texte n'a pas pu être lue.",
     docNumberOnce: "Les chiffres n'ont été lus qu'une fois et n'ont pas pu être confirmés.",
+    numberClosing: 'Les chiffres et les unités peuvent être mal lus. Vérifiez les chiffres une seconde fois par un autre moyen.',
     demoNotice: "Exemple de test. Sans rapport avec l'objet réel.",
   },
 

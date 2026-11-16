@@ -1,0 +1,39 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>camera harness</title>
+<style>body{font:14px monospace;margin:0} #log{padding:8px} iframe{width:420px;height:760px;border:1px solid #333}</style>
+<body>
+<pre id="log">대기…</pre>
+<iframe id="app" allow="camera; autoplay"></iframe>
+<script>
+const log = (s) => { document.getElementById('log').textContent += '\n' + s; };
+const qs = new URLSearchParams(location.search);
+const MODE = qs.get('mode') || 'object';      // object | scene
+const SECS = Number(qs.get('secs') || 60);
+const LABEL = qs.get('label') || 'run';
+const CLIP = qs.get('clip') || 'shake.mp4';
+addEventListener('DOMContentLoaded', () => { document.getElementById('app').src = '/index.html?fakecam=' + encodeURIComponent(CLIP); });
+const BTN = { object: '1', scene: '2' };
+
+addEventListener('load', async () => {
+  const f = document.getElementById('app');
+  await new Promise((r) => setTimeout(r, 2500));           // 앱 초기화 대기
+  const d = f.contentDocument;
+  if (!d) { log('FAIL: iframe 접근 불가'); document.title='ERROR'; return; }
+  const want = BTN[MODE];
+  const btn = [...d.querySelectorAll('button')].find((b) => (b.innerText || '').trim().startsWith(want + '.'));
+  if (!btn) { log('FAIL: 모드 버튼 없음 — ' + [...d.querySelectorAll('button')].map(b=>(b.innerText||'').trim().slice(0,12)).join(' | ')); document.title='ERROR'; return; }
+  await fetch('/mark/' + encodeURIComponent(LABEL));        // 계수 초기화
+  btn.click();
+  log('모드 시작: ' + MODE + ' / ' + SECS + '초 측정');
+  const t0 = Date.now();
+  const timer = setInterval(() => {
+    const st = (d.getElementById('status') || {}).textContent || '';
+    log(`  ${Math.round((Date.now()-t0)/1000)}s  상태: ${st.slice(0,70)}`);
+  }, 10000);
+  setTimeout(async () => {
+    clearInterval(timer);
+    const s = await (await fetch('/stats')).json();
+    log('\n측정 종료: 호출 ' + s.calls + '회 / ' + SECS + '초');
+    document.title = 'DONE ' + s.calls;
+  }, SECS * 1000);
+});
+</script>

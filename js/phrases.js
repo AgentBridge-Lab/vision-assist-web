@@ -156,6 +156,8 @@ export function composeDescription(r, opt) {
   if (medicine) lines.push({ label: T.labels.confirm, text: T.rule.medicineClosing });
   else if (r.high_risk === 'medical_value') lines.push({ label: T.labels.confirm, text: T.rule.medicalValueClosing });
   else if (r.high_risk === 'important_doc') lines.push({ label: T.labels.confirm, text: T.rule.importantClosing });
+  // 그 밖에도 읽어 준 글자에 숫자가 있으면 확인 문구를 붙입니다(용량·주소 같은 일반 숫자도 확신하며 틀리는 것이 측정됨)
+  else if (wantRead && read.some((t) => /\d/.test(t))) lines.push({ label: T.labels.confirm, text: T.rule.numberClosing });
 
   return finish(lines, unknown ? '' : subject);
 }
@@ -195,7 +197,9 @@ export function composeMedicalValue(a, b) {
  * - 숫자가 든 줄은 둘째 프레임의 OCR과 맞춰 보고, 어긋나면 둘 다 말하며 "확실하지 않습니다만"을 앞에 둡니다.
  * @param {import('./ocr.js').OcrResult} a 첫 프레임
  * @param {import('./ocr.js').OcrResult|null} b 둘째 프레임(실패하면 null)
- * @param {{OCR_LINE_DROP_CONF:number, OCR_LINE_UNSURE_CONF:number}} cfg
+ * - 숫자가 든 줄은 불확실 문턱을 따로(더 높게) 씁니다. 못 미치면 "확실하지 않습니다만"을 앞에 붙일 뿐, 숫자를 고치거나 채우지 않습니다.
+ * - 숫자가 하나라도 읽혔으면 끝에 숫자 확인 문구를 붙입니다(약·의료 수치에 한정하지 않음).
+ * @param {{OCR_LINE_DROP_CONF:number, OCR_LINE_UNSURE_CONF:number, OCR_NUMBER_LINE_UNSURE_CONF:number}} cfg
  * @returns {{sentences:string[], closings:string[], rawText:string}}
  */
 export function composeDocument(a, b, cfg) {
@@ -205,7 +209,7 @@ export function composeDocument(a, b, cfg) {
   const poolB = numsB ? [...numsB] : [];
   /** @type {string[]} */ const sentences = [];
   /** @type {string[]} */ const kept = [];
-  let dropped = false, numberOnce = false, idx = 0;
+  let dropped = false, numberOnce = false, hasNumber = false, idx = 0;
   for (const line of a.lines) {
     const text = line.text.replace(/\s+/g, ' ').trim();
     const toks = numberTokens(text);
@@ -213,7 +217,8 @@ export function composeDocument(a, b, cfg) {
     if (!text) continue;
     if (line.confidence < cfg.OCR_LINE_DROP_CONF) { dropped = true; continue; }
     kept.push(text);
-    let unsure = line.confidence < cfg.OCR_LINE_UNSURE_CONF;
+    let unsure = line.confidence < (toks.length ? cfg.OCR_NUMBER_LINE_UNSURE_CONF : cfg.OCR_LINE_UNSURE_CONF);
+    if (toks.length) hasNumber = true;
     let tail = '';
     if (toks.length) {
       if (!numsB) { unsure = true; numberOnce = true; }
@@ -234,7 +239,9 @@ export function composeDocument(a, b, cfg) {
   /** @type {string[]} */ const closings = [];
   if (dropped) closings.push(T.rule.docPartial);
   if (numberOnce) closings.push(T.rule.docNumberOnce);
+  // 숫자·단위는 신뢰도가 높아도 틀리게 읽히는 일이 측정으로 확인됐습니다. 숫자가 읽힌 모든 낭독에 확인 문구를 붙입니다
+  if (hasNumber) closings.push(T.rule.numberClosing);
   if (T.docWords.medicine.test(all)) closings.push(T.rule.medicineClosing);
-  else if (T.docWords.important.test(all)) closings.push(T.rule.importantClosing);
+  else if (!hasNumber && T.docWords.important.test(all)) closings.push(T.rule.importantClosing); // 숫자가 있으면 위 문구가 같은 권고를 이미 함
   return { sentences, closings, rawText: kept.join('\n') };
 }

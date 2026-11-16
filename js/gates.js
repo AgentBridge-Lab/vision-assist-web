@@ -95,6 +95,7 @@ export class GateKeeper {
     this.cfg = cfg;
     this.mode = mode;
     /** @type {Uint8Array|Uint8ClampedArray|null} */ this.prev = null;
+    this.prevAt = 0;
     this.stableSince = /** @type {number|null} */ (null);
     this.movingSince = /** @type {number|null} */ (null);
     this.lastSentHash = /** @type {bigint|null} */ (null);
@@ -108,9 +109,12 @@ export class GateKeeper {
     const c = this.cfg;
     const m = analyzeFrame(gray, c.SAMPLE_SIZE);
     const motion = this.prev ? frameDiff(gray, this.prev) : Infinity;
+    const prevAt = this.prevAt;
     this.prev = gray;
+    this.prevAt = now;
     if (motion <= c.MOTION_DIFF_MAX) {
-      if (this.stableSince === null) this.stableSince = now;
+      // 앞 프레임과 차가 작다 = 앞 프레임 시각부터 멈춰 있었다. 그 시각부터 셉니다
+      if (this.stableSince === null) this.stableSince = prevAt;
       this.movingSince = null;
     } else {
       this.stableSince = null;

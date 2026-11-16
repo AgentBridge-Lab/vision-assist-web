@@ -86,6 +86,7 @@ export default {
     demoStart: 'This is a test. The descriptions from now on are pre-written examples and have nothing to do with what the camera sees.', // draft
     noVoice: 'This device has no English voice, so results are shown as text on the screen instead of spoken.', // draft
     frameWait: 'Please hold the camera still for a moment.',
+    steadyHint: "The picture is still moving. Try resting the phone on a table or leaning it against a wall.",
     analyzing: 'Checking now.',
     slow: 'The response is slow. Waiting a little longer.',
     noChange: 'Nothing has changed, so I am waiting.',
@@ -183,6 +184,7 @@ export default {
     recheckSame: (n) => `It looks the same when checked again. Checked ${n} more time${n === 1 ? '' : 's'}.`, // draft
     docPartial: 'Some of the text could not be read.',
     docNumberOnce: 'The number was read only once, so it could not be confirmed.', // draft
+    numberClosing: 'Numbers and units may be read wrong. Please double-check the numbers by another method.',
     demoNotice: 'This is a test example. It has nothing to do with the real object.', // draft; added to every mock response
   },
 

@@ -11,6 +11,21 @@
  * @typedef {{text:string, confidence:number, lines:OcrLine[]}} OcrResult
  */
 
+/**
+ * 전각 영숫자·기호를 반각으로 바꿉니다(예: "1.5Ｌ" → "1.5L"). 2026-11-16 측정에서 반복해 나온 계통 오류입니다.
+ * - 글자의 폭만 바꿉니다. 한글과 한자, 가나는 건드리지 않고, 읽히지 않은 글자를 채우거나 고치지도 않습니다.
+ * - 중국어·일본어 문서(keepPunctuation)는 전각 문장부호가 원문의 정상 표기이므로 영숫자만 바꾸고,
+ *   기호는 숫자에 붙은 것(１．５ ／ ５０％ 등)만 바꿉니다.
+ * @param {string} text
+ * @param {boolean} [keepPunctuation]
+ */
+export function normalizeWidth(text, keepPunctuation = false) {
+  const half = (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+  let s = String(text || '').replace(/[０-９Ａ-Ｚａ-ｚ]/g, half);
+  if (keepPunctuation) return s.replace(/(?<=\d)[．，：／－～](?=\d)|(?<=\d)％/g, half);
+  return s.replace(/[！-～]/g, half).replace(/　/g, ' ');
+}
+
 export class Ocr {
   /** @param {typeof import('./config.js').CONFIG} cfg */
   constructor(cfg) {
@@ -136,8 +151,9 @@ export class Ocr {
   async recognize(canvas, lang) {
     await this.init(lang);
     const { data } = await this.worker.recognize(canvas);
+    const keep = lang === 'chi_sim' || lang === 'jpn';
     /** @type {OcrLine[]} */
-    const lines = (data.lines || []).map((l) => ({ text: String(l.text || '').trim(), confidence: Number(l.confidence) || 0 })).filter((l) => l.text);
-    return { text: String(data.text || '').trim(), confidence: Number(data.confidence) || 0, lines };
+    const lines = (data.lines || []).map((l) => ({ text: normalizeWidth(l.text, keep).trim(), confidence: Number(l.confidence) || 0 })).filter((l) => l.text);
+    return { text: normalizeWidth(data.text, keep).trim(), confidence: Number(data.confidence) || 0, lines };
   }
 }

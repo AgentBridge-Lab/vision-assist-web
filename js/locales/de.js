@@ -79,6 +79,7 @@ export default {
     demoStart: 'Testmodus. Die folgenden Beschreibungen sind vorgefertigte Beispiele und haben nichts mit dem zu tun, was die Kamera sieht.',
     noVoice: 'Auf diesem Gerät ist keine deutsche Stimme vorhanden. Die Hinweise erscheinen stattdessen als Text auf dem Bildschirm.',
     frameWait: 'Halten Sie die Kamera kurz still.',
+    steadyHint: "Das Bild bewegt sich noch. Legen Sie das Telefon auf einen Tisch oder lehnen Sie es an eine Wand.",
     analyzing: 'Ich prüfe gerade.',
     slow: 'Die Antwort dauert länger. Ich warte noch etwas.',
     noChange: 'Keine Veränderung, ich warte.',
@@ -172,6 +173,7 @@ export default {
     recheckSame: (n) => `Auch beim erneuten Ansehen sieht es gleich aus. ${n} Mal neu geprüft.`,
     docPartial: 'Ein Teil des Textes konnte nicht gelesen werden.',
     docNumberOnce: 'Die Zahlen wurden nur einmal gelesen und nicht abgeglichen.',
+    numberClosing: 'Zahlen und Einheiten können falsch gelesen sein. Bitte prüfen Sie die Zahlen noch einmal auf anderem Weg.',
     demoNotice: 'Testbeispiel. Es hat nichts mit einem echten Gegenstand zu tun.',
   },
 
